@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* ================================================================
+   文表智联 — A4 文档预览样式
+   三套预设：学术 (academic) / 现代 (modern) / 经典 (classic)
+   ================================================================ */
+
+/* ─── 全局容器：灰色底 ─── */
+html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #d0d0d0;
+    min-height: 100%;
+}
+
+/* ─── A4 纸张容器 ─── */
+.page-container {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 32px auto;
+    padding: 25.4mm 31.7mm 25.4mm 31.7mm;   /* 默认学术页边距 */
+    background: #ffffff;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.18), 0 0 1px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* ─── 页脚 ─── */
+.page-footer {
+    position: absolute;
+    bottom: 12mm;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 10pt;
+    color: #999999;
+    font-family: "Times New Roman", serif;
+}
+
+/* ===================================================================
+   基础排版 — 各预设共享
+   =================================================================== */
+.page-container p {
+    margin: 0.6em 0;
+    text-indent: 2em;
+    orphans: 2;
+    widows: 2;
+}
+
+.page-container p:first-child {
+    margin-top: 0;
+}
+
+.page-container a {
+    color: #1a73e8;
+    text-decoration: none;
+}
+
+.page-container a:hover {
+    text-decoration: underline;
+}
+
+.page-container img {
+    max-width: 100%;
+    display: block;
+    margin: 1em auto;
+}
+
+.page-container sup { font-size: 0.75em; vertical-align: super; }
+.page-container sub { font-size: 0.75em; vertical-align: sub; }
+.page-container u { text-decoration: underline; }
+.page-container del, .page-container s { text-decoration: line-through; color: #999; }
+
+/* ─── 列表 ─── */
+.page-container ul, .page-container ol {
+    padding-left: 2em;
+    margin: 0.6em 0;
+}
+.page-container li {
+    margin: 0.25em 0;
+    text-indent: 0;
+}
+.page-container li p {
+    text-indent: 0;
+    margin: 0.2em 0;
+}
+
+/* ─── 分隔线 ─── */
+.page-container hr {
+    border: none;
+    border-top: 1px solid #d0d0d0;
+    margin: 1.5em 0;
+}
+
+/* ─── 行内代码 ─── */
+.page-container code {
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+    font-size: 0.88em;
+    background-color: #f0f4f8;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #d63384;
+    border: 1px solid #e2e8f0;
+}
+
+/* ─── 代码块 ─── */
+.page-container pre {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 14px 18px;
+    line-height: 1.55;
+    margin: 1em 0;
+    overflow-x: auto;
+}
+.page-container pre code {
+    background: transparent;
+    padding: 0;
+    color: #2d3748;
+    border: none;
+    font-size: 0.9em;
+}
+
+/* ─── 引用块 ─── */
+.page-container blockquote {
+    border-left: 4px solid #4a90d9;
+    margin: 0.8em 0;
+    padding: 0.5em 1em;
+    color: #555;
+    background-color: #f8f9ff;
+    border-radius: 0 4px 4px 0;
+}
+.page-container blockquote p {
+    text-indent: 0;
+    margin: 0.3em 0;
+}
+
+/* ─── Pygments 代码高亮容器 ─── */
+.page-container .highlight {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin: 1em 0;
+}
+.page-container .highlight pre {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+
+/* ===================================================================
+   预设一：学术 (academic) — 宋体正文 + 黑体标题，1.5倍行距
+   =================================================================== */
+.preset-academic .page-container {
+    padding: 25.4mm 31.7mm;
+    font-family: "SimSun", "宋体", "Times New Roman", serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #1a1a1a;
+}
+
+.preset-academic h1, .preset-academic h2, .preset-academic h3,
+.preset-academic h4, .preset-academic h5, .preset-academic h6 {
+    font-family: "SimHei", "黑体", sans-serif;
+    color: #000000;
+    margin-top: 1.2em;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+    line-height: 1.35;
+}
+.preset-academic h1 {
+    font-size: 18pt;
+    text-align: center;
+    padding-bottom: 0.3em;
+    border-bottom: none;
+}
+.preset-academic h2 {
+    font-size: 15pt;
+}
+.preset-academic h3 {
+    font-size: 13pt;
+}
+.preset-academic h4 {
+    font-size: 12pt;
+}
+.preset-academic h5, .preset-academic h6 {
+    font-size: 12pt;
+}
+
+.preset-academic table {
+    border-collapse: collapse;
+    width: auto;
+    margin: 1em auto;
+    font-size: 10.5pt;
+}
+.preset-academic th, .preset-academic td {
+    padding: 6px 14px;
+    text-align: center;
+    border: none;
+}
+/* 三线表 */
+.preset-academic thead {
+    border-top: 2px solid #000;
+    border-bottom: 1px solid #000;
+}
+.preset-academic tbody {
+    border-bottom: 2px solid #000;
+}
+.preset-academic th {
+    font-weight: bold;
+    background: transparent;
+}
+
+
+/* ===================================================================
+   预设二：现代 (modern) — 微软雅黑，紧凑行距，蓝色标题
+   =================================================================== */
+.preset-modern .page-container {
+    padding: 20mm 25mm;
+    font-family: "Microsoft YaHei", "微软雅黑", "Segoe UI", sans-serif;
+    font-size: 11pt;
+    line-height: 1.4;
+    color: #2d3748;
+}
+
+.preset-modern h1, .preset-modern h2, .preset-modern h3,
+.preset-modern h4, .preset-modern h5, .preset-modern h6 {
+    font-family: "Microsoft YaHei", "微软雅黑", "Segoe UI", sans-serif;
+    color: #1a5bb4;
+    margin-top: 1em;
+    margin-bottom: 0.4em;
+    font-weight: 600;
+    line-height: 1.3;
+}
+.preset-modern h1 {
+    font-size: 20pt;
+    border-bottom: 2px solid #1a5bb4;
+    padding-bottom: 0.25em;
+}
+.preset-modern h2 {
+    font-size: 15pt;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 0.15em;
+}
+.preset-modern h3 {
+    font-size: 13pt;
+}
+.preset-modern h4 {
+    font-size: 11pt;
+    color: #2d5f9a;
+}
+
+.preset-modern table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+    font-size: 10pt;
+}
+.preset-modern th, .preset-modern td {
+    border: 1px solid #dee2e6;
+    padding: 8px 12px;
+    text-align: left;
+}
+.preset-modern th {
+    background-color: #e8f0fe;
+    font-weight: 600;
+    color: #1a5bb4;
+    border-bottom: 2px solid #1a5bb4;
+}
+.preset-modern blockquote {
+    border-left-color: #1a5bb4;
+    background-color: #f0f5ff;
+}
+
+
+/* ===================================================================
+   预设三：经典 (classic) — 仿宋正文 + 黑体标题，2倍行距
+   =================================================================== */
+.preset-classic .page-container {
+    padding: 30mm 31.7mm 25.4mm 31.7mm;
+    font-family: "FangSong", "仿宋", "STFangsong", serif;
+    font-size: 12pt;
+    line-height: 2.0;
+    color: #222222;
+}
+
+.preset-classic h1, .preset-classic h2, .preset-classic h3,
+.preset-classic h4, .preset-classic h5, .preset-classic h6 {
+    font-family: "SimHei", "黑体", sans-serif;
+    color: #333333;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+    line-height: 1.4;
+}
+.preset-classic h1 {
+    font-size: 18pt;
+    text-align: center;
+}
+.preset-classic h2 {
+    font-size: 15pt;
+}
+.preset-classic h3 {
+    font-size: 13pt;
+}
+.preset-classic h4, .preset-classic h5, .preset-classic h6 {
+    font-size: 12pt;
+}
+
+.preset-classic table {
+    border-collapse: collapse;
+    width: auto;
+    margin: 1em auto;
+    font-size: 10.5pt;
+}
+.preset-classic th, .preset-classic td {
+    padding: 6px 14px;
+    text-align: center;
+    border: none;
+}
+.preset-classic thead {
+    border-top: 2px solid #333;
+    border-bottom: 1px solid #333;
+}
+.preset-classic tbody {
+    border-bottom: 2px solid #333;
+}
+.preset-classic th {
+    font-weight: bold;
+    background: transparent;
+}
+.preset-classic blockquote {
+    border-left-color: #666;
+    background-color: #f5f5f0;
+    color: #444;
+}
+
+pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: #ffffcc }
+.highlight { background: #f8f8f8; }
+.highlight .c { color: #3D7B7B; font-style: italic } /* Comment */
+.highlight .err { border: 1px solid #F00 } /* Error */
+.highlight .k { color: #008000; font-weight: bold } /* Keyword */
+.highlight .o { color: #666 } /* Operator */
+.highlight .ch { color: #3D7B7B; font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: #3D7B7B; font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: #9C6500 } /* Comment.Preproc */
+.highlight .cpf { color: #3D7B7B; font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: #3D7B7B; font-style: italic } /* Comment.Single */
+.highlight .cs { color: #3D7B7B; font-style: italic } /* Comment.Special */
+.highlight .gd { color: #A00000 } /* Generic.Deleted */
+.highlight .ge { font-style: italic } /* Generic.Emph */
+.highlight .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.highlight .gr { color: #E40000 } /* Generic.Error */
+.highlight .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.highlight .gi { color: #008400 } /* Generic.Inserted */
+.highlight .go { color: #717171 } /* Generic.Output */
+.highlight .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.highlight .gs { font-weight: bold } /* Generic.Strong */
+.highlight .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.highlight .gt { color: #04D } /* Generic.Traceback */
+.highlight .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: #008000 } /* Keyword.Pseudo */
+.highlight .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: #B00040 } /* Keyword.Type */
+.highlight .m { color: #666 } /* Literal.Number */
+.highlight .s { color: #BA2121 } /* Literal.String */
+.highlight .na { color: #687822 } /* Name.Attribute */
+.highlight .nb { color: #008000 } /* Name.Builtin */
+.highlight .nc { color: #00F; font-weight: bold } /* Name.Class */
+.highlight .no { color: #800 } /* Name.Constant */
+.highlight .nd { color: #A2F } /* Name.Decorator */
+.highlight .ni { color: #717171; font-weight: bold } /* Name.Entity */
+.highlight .ne { color: #CB3F38; font-weight: bold } /* Name.Exception */
+.highlight .nf { color: #00F } /* Name.Function */
+.highlight .nl { color: #767600 } /* Name.Label */
+.highlight .nn { color: #00F; font-weight: bold } /* Name.Namespace */
+.highlight .nt { color: #008000; font-weight: bold } /* Name.Tag */
+.highlight .nv { color: #19177C } /* Name.Variable */
+.highlight .ow { color: #A2F; font-weight: bold } /* Operator.Word */
+.highlight .w { color: #BBB } /* Text.Whitespace */
+.highlight .mb { color: #666 } /* Literal.Number.Bin */
+.highlight .mf { color: #666 } /* Literal.Number.Float */
+.highlight .mh { color: #666 } /* Literal.Number.Hex */
+.highlight .mi { color: #666 } /* Literal.Number.Integer */
+.highlight .mo { color: #666 } /* Literal.Number.Oct */
+.highlight .sa { color: #BA2121 } /* Literal.String.Affix */
+.highlight .sb { color: #BA2121 } /* Literal.String.Backtick */
+.highlight .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight .dl { color: #BA2121 } /* Literal.String.Delimiter */
+.highlight .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.highlight .s2 { color: #BA2121 } /* Literal.String.Double */
+.highlight .se { color: #AA5D1F; font-weight: bold } /* Literal.String.Escape */
+.highlight .sh { color: #BA2121 } /* Literal.String.Heredoc */
+.highlight .si { color: #A45A77; font-weight: bold } /* Literal.String.Interpol */
+.highlight .sx { color: #008000 } /* Literal.String.Other */
+.highlight .sr { color: #A45A77 } /* Literal.String.Regex */
+.highlight .s1 { color: #BA2121 } /* Literal.String.Single */
+.highlight .ss { color: #19177C } /* Literal.String.Symbol */
+.highlight .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #00F } /* Name.Function.Magic */
+.highlight .vc { color: #19177C } /* Name.Variable.Class */
+.highlight .vg { color: #19177C } /* Name.Variable.Global */
+.highlight .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight .vm { color: #19177C } /* Name.Variable.Magic */
+.highlight .il { color: #666 } /* Literal.Number.Integer.Long */
+
+/* Editor-specific styles */
+#editor-content {
+    outline: none;
+    min-height: 200mm;
+    cursor: text;
+}
+#editor-content:empty:before {
+    content: '开始写作...';
+    color: #bbbbbb;
+    font-style: italic;
+    pointer-events: none;
+}
+</style>
+
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <script>
+    var bridge = null;
+    var _contentChangeTimer = null;
+    var _statsTimer = null;
+    var _formatTimer = null;
+
+    new QWebChannel(qt.webChannelTransport, function(channel) {
+        bridge = channel.objects.bridge;
+        bridge.reportPageReady();
+    });
+
+    // ── Content change detection ──
+    var editorEl = null;
+
+    function initEditor() {
+        editorEl = document.getElementById('editor-content');
+        if (!editorEl) return;
+
+        editorEl.addEventListener('input', function() {
+            scheduleContentReport();
+            scheduleStatsReport();
+        });
+
+        // Paste handler: clean HTML on paste
+        editorEl.addEventListener('paste', function(e) {
+            e.preventDefault();
+            var text = '';
+            if (e.clipboardData) {
+                // Prefer HTML, but clean it
+                var html = e.clipboardData.getData('text/html');
+                if (html) {
+                    // Strip scripts, styles, and class/id attributes
+                    var temp = document.createElement('div');
+                    temp.innerHTML = html;
+                    // Remove script/style tags
+                    var scripts = temp.querySelectorAll('script, style, meta, link');
+                    scripts.forEach(function(s) { s.remove(); });
+                    // Remove class/id/data attributes
+                    var allEls = temp.querySelectorAll('*');
+                    allEls.forEach(function(el) {
+                        var attrs = Array.from(el.attributes);
+                        attrs.forEach(function(attr) {
+                            if (attr.name !== 'style' && attr.name !== 'href' &&
+                                attr.name !== 'src' && attr.name !== 'alt') {
+                                el.removeAttribute(attr.name);
+                            }
+                        });
+                    });
+                    document.execCommand('insertHTML', false, temp.innerHTML);
+                } else {
+                    text = e.clipboardData.getData('text/plain');
+                    document.execCommand('insertText', false, text);
+                }
+            }
+            scheduleContentReport();
+            scheduleStatsReport();
+        });
+
+        // Keyboard shortcuts for undo/redo handled natively by contentEditable
+
+        // ── Keyboard handler: exit block elements ──
+        editorEl.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter' || e.shiftKey || e.ctrlKey) return;
+            var sel = window.getSelection();
+            if (!sel.rangeCount) return;
+            var node = sel.anchorNode;
+
+            // --- PRE (code block) ---
+            var pre = _closestTag(node, 'PRE');
+            if (pre && editorEl.contains(pre)) {
+                e.preventDefault();
+                var fullText = pre.textContent || '';
+                // Empty code block -> remove and exit
+                if (!fullText.trim()) {
+                    _exitBlock(pre, true);
+                    scheduleContentReport();
+                    return;
+                }
+                // Get text before cursor
+                var r = sel.getRangeAt(0);
+                var preRange = document.createRange();
+                preRange.selectNodeContents(pre);
+                preRange.setEnd(r.startContainer, r.startOffset);
+                var before = preRange.toString();
+                var afterCursor = fullText.substring(before.length);
+                // At end with empty last line -> exit
+                if (before.endsWith('\n') && !afterCursor.trim()) {
+                    pre.textContent = fullText.replace(/\n+$/, '');
+                    if (!pre.textContent.trim()) _exitBlock(pre, true);
+                    else _exitBlock(pre, false);
+                    scheduleContentReport();
+                    return;
+                }
+                // Normal newline inside pre
+                document.execCommand('insertText', false, '\n');
+                scheduleContentReport();
+                return;
+            }
+
+            // --- BLOCKQUOTE ---
+            var bq = _closestTag(node, 'BLOCKQUOTE');
+            if (bq && editorEl.contains(bq)) {
+                // Find current block-level child inside blockquote
+                var current = node;
+                while (current.parentNode && current.parentNode !== bq && current.parentNode !== editorEl) {
+                    current = current.parentNode;
+                }
+                var lineText = (current.textContent || '').trim();
+                if (!lineText) {
+                    e.preventDefault();
+                    if (current !== bq) current.remove();
+                    if (!bq.textContent.trim()) _exitBlock(bq, true);
+                    else _exitBlock(bq, false);
+                    scheduleContentReport();
+                    return;
+                }
+            }
+        });
+
+        // ── Format state tracking ──
+        document.addEventListener('selectionchange', _scheduleFormatReport);
+
+        scheduleStatsReport();
+    }
+
+    function scheduleContentReport() {
+        if (_contentChangeTimer) clearTimeout(_contentChangeTimer);
+        _contentChangeTimer = setTimeout(function() {
+            try {
+            if (bridge && editorEl) {
+                bridge.reportContentChanged(editorEl.innerHTML);
+            }
+            } catch(e) { console.error('content report error', e); }
+        }, 300);
+    }
+
+    function scheduleStatsReport() {
+        if (_statsTimer) clearTimeout(_statsTimer);
+        _statsTimer = setTimeout(function() {
+            try {
+            if (bridge && editorEl) {
+                var text = editorEl.innerText || '';
+                // Count Chinese chars + English words
+                var cjkRe = /[\u4e00-\u9fff\u3400-\u4dbf]/g;
+                var chineseChars = (text.match(cjkRe) || []).length;
+                var englishWords = text.replace(cjkRe, ' ')
+                    .split(/\s+/).filter(function(w) { return w.length > 0; }).length;
+                var wordCount = chineseChars + englishWords;
+                var charCount = text.replace(/\s/g, '').length;
+                bridge.reportCursorInfo(wordCount, charCount);
+            }
+            } catch(e) { console.error('stats error', e); }
+        }, 500);
+    }
+
+    // ── Format commands ──
+    function execFormat(command, value) {
+        editorEl.focus();
+        document.execCommand(command, false, value || null);
+        scheduleContentReport();
+    }
+
+    function applyHeading(level) {
+        editorEl.focus();
+        document.execCommand('formatBlock', false, '<h' + level + '>');
+        scheduleContentReport();
+    }
+
+    function applyParagraph() {
+        editorEl.focus();
+        document.execCommand('formatBlock', false, '<p>');
+        scheduleContentReport();
+    }
+
+    function insertCodeBlock() {
+        editorEl.focus();
+        var sel = window.getSelection();
+        var text = sel.toString() || '';
+        var pre = document.createElement('pre');
+        var code = document.createElement('code');
+        code.textContent = text || '\n';
+        pre.appendChild(code);
+        // Delete selected content first
+        if (sel.rangeCount > 0) {
+            var range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(pre);
+            // Move cursor after the pre
+            range.setStartAfter(pre);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+        scheduleContentReport();
+    }
+
+    function insertQuote() {
+        editorEl.focus();
+        document.execCommand('formatBlock', false, '<blockquote>');
+        scheduleContentReport();
+    }
+
+    function insertLink(url) {
+        editorEl.focus();
+        var sel = window.getSelection();
+        if (sel.toString().length === 0) {
+            // No selection — insert placeholder
+            document.execCommand('insertHTML', false,
+                '<a href="' + url + '">' + (url || '链接') + '</a>');
+        } else {
+            document.execCommand('createLink', false, url);
+        }
+        scheduleContentReport();
+    }
+
+    function insertImage(src, alt) {
+        editorEl.focus();
+        var html = '<img src="' + src + '" alt="' + (alt || '') + '" />';
+        document.execCommand('insertHTML', false, html);
+        scheduleContentReport();
+    }
+
+    function insertTableHTML(tableHTML) {
+        editorEl.focus();
+        document.execCommand('insertHTML', false, tableHTML);
+        scheduleContentReport();
+    }
+
+    function insertHR() {
+        editorEl.focus();
+        document.execCommand('insertHorizontalRule', false, null);
+        scheduleContentReport();
+    }
+
+    function setFontColor(color) {
+        editorEl.focus();
+        document.execCommand('foreColor', false, color);
+        scheduleContentReport();
+    }
+
+    function setHighlightColor(color) {
+        editorEl.focus();
+        document.execCommand('hiliteColor', false, color);
+        scheduleContentReport();
+    }
+
+    function setFontSizePx(px) {
+        editorEl.focus();
+        // execCommand fontSize uses 1-7 scale, not px.
+        // Workaround: apply fontSize 7 then replace generated <font> with styled span.
+        var sel = window.getSelection();
+        if (!sel.rangeCount) return;
+        var range = sel.getRangeAt(0);
+        if (range.collapsed) {
+            // No selection: insert a zero-width space with the size so next typing uses it
+            var span = document.createElement('span');
+            span.style.fontSize = px + 'px';
+            span.innerHTML = '\u200B';
+            range.insertNode(span);
+            range.setStartAfter(span.firstChild);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            scheduleContentReport();
+            return;
+        }
+        document.execCommand('fontSize', false, '7');
+        // Replace generated <font size="7"> with <span style="font-size: ...">
+        var fonts = editorEl.querySelectorAll('font[size="7"]');
+        fonts.forEach(function(f) {
+            var span = document.createElement('span');
+            span.style.fontSize = px + 'px';
+            while (f.firstChild) span.appendChild(f.firstChild);
+            f.parentNode.replaceChild(span, f);
+        });
+        scheduleContentReport();
+    }
+
+    // ── Find & Replace ──
+    function findInContent(needle, caseSensitive, backward) {
+        if (!needle) return false;
+        // window.find(string, caseSensitive, backwards, wrapAround)
+        return window.find(needle, caseSensitive, backward, true);
+    }
+
+    function replaceSelection(replacement) {
+        var sel = window.getSelection();
+        if (sel.rangeCount > 0 && !sel.isCollapsed) {
+            document.execCommand('insertText', false, replacement);
+            scheduleContentReport();
+            return true;
+        }
+        return false;
+    }
+
+    function replaceAll(needle, replacement, caseSensitive) {
+        if (!needle || !editorEl) return 0;
+        // Move cursor to start
+        var sel = window.getSelection();
+        var range = document.createRange();
+        range.selectNodeContents(editorEl);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        var count = 0;
+        while (window.find(needle, caseSensitive, false, false)) {
+            document.execCommand('insertText', false, replacement);
+            count++;
+            if (count > 10000) break; // safety
+        }
+        if (count > 0) scheduleContentReport();
+        return count;
+    }
+
+    // ── Scroll to heading ──
+    function scrollToHeading(headingId) {
+        var el = document.getElementById(headingId);
+        if (!el) {
+            // Try matching by text content
+            var headings = editorEl.querySelectorAll('h1,h2,h3,h4,h5,h6');
+            for (var i = 0; i < headings.length; i++) {
+                if (headings[i].textContent.trim() === headingId) {
+                    el = headings[i];
+                    break;
+                }
+            }
+        }
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    // ── Get current content ──
+    function getEditorHTML() {
+        return editorEl ? editorEl.innerHTML : '';
+    }
+
+    // ── Set content (used when loading files) ──
+    function setEditorContent(html) {
+        if (editorEl) {
+            editorEl.innerHTML = html;
+            scheduleStatsReport();
+        }
+    }
+
+    // ── Undo / Redo ──
+    function editorUndo() {
+        editorEl.focus();
+        document.execCommand('undo', false, null);
+        scheduleContentReport();
+    }
+
+    function editorRedo() {
+        editorEl.focus();
+        document.execCommand('redo', false, null);
+        scheduleContentReport();
+    }
+
+    function editorSelectAll() {
+        editorEl.focus();
+        document.execCommand('selectAll', false, null);
+    }
+
+    // ── Helper: find closest ancestor with given tag ──
+    function _closestTag(node, tagName) {
+        while (node && node !== editorEl) {
+            if (node.nodeType === 1 && node.tagName === tagName) return node;
+            node = node.parentNode;
+        }
+        return null;
+    }
+
+    // ── Helper: exit a block element ──
+    function _exitBlock(block, removeBlock) {
+        var p = document.createElement('p');
+        p.innerHTML = '<br>';
+        if (block.nextSibling) {
+            block.parentNode.insertBefore(p, block.nextSibling);
+        } else {
+            block.parentNode.appendChild(p);
+        }
+        if (removeBlock) block.remove();
+        var sel = window.getSelection();
+        var range = document.createRange();
+        range.setStart(p, 0);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+
+    // ── Format state detection ──
+    function _getFormatState() {
+        var state = {};
+        try {
+            state.bold = document.queryCommandState('bold');
+            state.italic = document.queryCommandState('italic');
+            state.underline = document.queryCommandState('underline');
+            state.strikethrough = document.queryCommandState('strikeThrough');
+            state.superscript = document.queryCommandState('superscript');
+            state.subscript = document.queryCommandState('subscript');
+            state.blockType = '';
+            state.inList = '';
+            state.inCode = false;
+            state.inQuote = false;
+            var bv = document.queryCommandValue('formatBlock');
+            if (bv) state.blockType = bv.toLowerCase().replace(/[<>]/g, '');
+            var sel = window.getSelection();
+            if (sel.rangeCount > 0) {
+                var n = sel.anchorNode;
+                while (n && n !== editorEl) {
+                    if (n.nodeType === 1) {
+                        var t = n.tagName;
+                        if (t === 'PRE') state.inCode = true;
+                        if (t === 'BLOCKQUOTE') state.inQuote = true;
+                        if (t === 'UL') state.inList = 'ul';
+                        if (t === 'OL') state.inList = 'ol';
+                    }
+                    n = n.parentNode;
+                }
+            }
+        } catch(e) {}
+        return state;
+    }
+
+    function _scheduleFormatReport() {
+        if (_formatTimer) clearTimeout(_formatTimer);
+        _formatTimer = setTimeout(function() {
+            try {
+                if (bridge) {
+                    bridge.reportFormatState(JSON.stringify(_getFormatState()));
+                }
+            } catch(e) {}
+        }, 100);
+    }
+
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', initEditor);
+    // Fallback
+    window.addEventListener('load', function() {
+        if (!editorEl) initEditor();
+    });
+    </script>
+    
+</head>
+<body class="preset-academic">
+<div class="page-container">
+<div id="editor-content" contenteditable="true">
+
+</div>
+</div>
+<div style="height:48px;"></div>
+</body>
+</html>
