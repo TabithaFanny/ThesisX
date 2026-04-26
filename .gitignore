@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+venv312/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# PyInstaller
+*.spec
+
+# User data
+*.log
+config.ini
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Windows
+Thumbs.db
+desktop.ini
