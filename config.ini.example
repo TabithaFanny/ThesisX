@@ -1,0 +1,10 @@
+[AI]
+; ThesisX AI 接口配置
+; 将你的 API Key 填写在下方 api_key = 后面
+api_key = 你的API_KEY
+
+; 可选：自定义 AI 模型名称（默认 gpt-5.3-codex）
+; model = gpt-5.3-codex
+
+; 可选：自定义 API 地址（默认 https://llm.nodai.design/v1/chat/completions）
+; api_url = https://llm.nodai.design/v1/chat/completions
