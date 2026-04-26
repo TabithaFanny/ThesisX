@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 高风险图标 - 圆润警告三角 -->
+  <defs>
+    <linearGradient id="highRiskGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fc8181"/>
+      <stop offset="100%" stop-color="#f56565"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- 三角形主体 -->
+  <path d="M12 2.5L2.5 20.5a1 1 0 0 0 .866 1.5h17.268a1 1 0 0 0 .866-1.5L12 2.5z"
+        fill="url(#highRiskGrad)" stroke="#e53e3e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#shadow)"/>
+
+  <!-- 感叹号 -->
+  <line x1="12" y1="8" x2="12" y2="14" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="12" cy="17" r="1.2" fill="#ffffff"/>
+</svg>

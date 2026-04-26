@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 目标图标 - 靶心+箭头 -->
+  <defs>
+    <linearGradient id="targetGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 靶心圆圈 -->
+  <circle cx="12" cy="12" r="10" fill="none" stroke="#fecaca" stroke-width="2"/>
+  <circle cx="12" cy="12" r="7" fill="none" stroke="#fca5a5" stroke-width="2"/>
+  <circle cx="12" cy="12" r="4" fill="none" stroke="#f87171" stroke-width="2"/>
+  <circle cx="12" cy="12" r="2" fill="url(#targetGrad)"/>
+
+  <!-- 箭头 -->
+  <path d="M22 2l-8 8" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+  <path d="M22 2l-3 0 0 3" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="14" cy="10" r="1.5" fill="#dc2626"/>
+</svg>

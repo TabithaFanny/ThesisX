@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 智能降重图标 - 精致AI魔法棒 -->
+  <defs>
+    <linearGradient id="wandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+    <linearGradient id="sparkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <radialGradient id="glowGrad">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 魔法棒主体 -->
+  <path d="M15 4l-11 11 4 4 11-11-4-4z"
+        fill="url(#wandGrad)" stroke="#0e7490" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 魔法棒高光 -->
+  <path d="M4 15l4 4" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M6 13l8-8" stroke="#ffffff" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+
+  <!-- 主星光（大） -->
+  <circle cx="19" cy="2" r="2" fill="url(#glowGrad)"/>
+  <path d="M19 1l0.8 2 2 0.8-2 0.8-0.8 2-0.8-2-2-0.8 2-0.8 0.8-2z"
+        fill="url(#sparkGrad)" stroke="#f59e0b" stroke-width="0.5"/>
+
+  <!-- 次星光（中） -->
+  <circle cx="21" cy="10" r="1.5" fill="url(#glowGrad)"/>
+  <path d="M21 9l0.5 1 1 0.5-1 0.5-0.5 1-0.5-1-1-0.5 1-0.5 0.5-1z"
+        fill="url(#sparkGrad)" opacity="0.8"/>
+
+  <!-- 小星光 -->
+  <path d="M10 2l0.4 0.8 0.8 0.4-0.8 0.4-0.4 0.8-0.4-0.8-0.8-0.4 0.8-0.4 0.4-0.8z"
+        fill="url(#sparkGrad)" opacity="0.6"/>
+</svg>

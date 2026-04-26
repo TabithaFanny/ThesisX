@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 来源图标 - 书本+链接 -->
+  <defs>
+    <linearGradient id="bookGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 书本主体 -->
+  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
+        stroke="url(#bookGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+        fill="#ffffff" stroke="url(#bookGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 书页线条 -->
+  <line x1="8" y1="7" x2="16" y2="7" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="8" y1="11" x2="14" y2="11" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- 链接图标（右下角） -->
+  <circle cx="17" cy="17" r="4.5" fill="#3b82f6" opacity="0.9"/>
+  <path d="M15.5 17h3M17 15.5v3" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 建议图标 - 现代灯泡 -->
+  <defs>
+    <linearGradient id="bulbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <radialGradient id="glowGrad">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 光晕效果 -->
+  <circle cx="12" cy="10" r="8" fill="url(#glowGrad)"/>
+
+  <!-- 灯泡主体 -->
+  <path d="M12 2a6 6 0 0 1 4 10.5V16a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-3.5A6 6 0 0 1 12 2z"
+        fill="url(#bulbGrad)" stroke="#d97706" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 灯泡高光 -->
+  <path d="M10 5a4 4 0 0 1 4 0" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.6" fill="none"/>
+
+  <!-- 灯座 -->
+  <rect x="10" y="18" width="4" height="2" rx="1" fill="#d97706"/>
+  <rect x="10.5" y="20" width="3" height="1.5" rx="0.5" fill="#b45309"/>
+
+  <!-- 闪光线 -->
+  <line x1="12" y1="1" x2="12" y2="2" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="6" y1="4" x2="6.7" y2="4.7" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="18" y1="4" x2="17.3" y2="4.7" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 激进模式图标 - 火焰闪电 -->
+  <defs>
+    <linearGradient id="aggGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+    <linearGradient id="flameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 火焰形状 -->
+  <path d="M12 2c-1 3-3 5-3 8 0 3 2 5 3 6 1-1 3-3 3-6 0-3-2-5-3-8z"
+        fill="url(#flameGrad)" stroke="#ea580c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 内部火焰 -->
+  <path d="M12 8c-0.5 1.5-1 2-1 3.5 0 1.5 1 2.5 1 3 0-0.5 1-1.5 1-3 0-1.5-0.5-2-1-3.5z"
+        fill="#fbbf24" opacity="0.8"/>
+
+  <!-- 闪电装饰 -->
+  <path d="M8 18l2-3h-1.5l2-3" stroke="#ea580c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M16 18l-2-3h1.5l-2-3" stroke="#ea580c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 快速降重图标 - 闪电+笔 -->
+  <defs>
+    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="quickPenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 闪电主体 -->
+  <path d="M13 2L3 14h8l-2 8 10-12h-8l2-8z"
+        fill="url(#boltGrad)" stroke="#d97706" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 闪电高光 -->
+  <path d="M11 2l-6 8h6" stroke="#ffffff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.6" fill="none"/>
+
+  <!-- 编辑笔（右下角小图标） -->
+  <circle cx="19" cy="19" r="4" fill="#ffffff" stroke="#e1e4e8" stroke-width="1"/>
+  <path d="M17.5 17.5l3 3" stroke="url(#quickPenGrad)" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="17.2" cy="17.2" r="0.8" fill="url(#quickPenGrad)"/>
+</svg>

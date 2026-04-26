@@ -1,0 +1,918 @@
+/* ================================================================
+   文表智联 — A4 文档预览样式
+   三套预设：学术 (academic) / 现代 (modern) / 经典 (classic)
+   ================================================================ */
+
+/* ─── 全局容器：灰色底 ─── */
+html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #d0d0d0;
+    min-height: 100%;
+}
+
+/* ─── 多页外层包裹 ─── */
+.pages-wrapper {
+    padding: 32px 0;
+    will-change: transform;         /* GPU composite layer */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+/* ─── A4 纸张容器（单页） ─── */
+.page-container {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto 32px auto;
+    padding: 25.4mm 31.7mm 25.4mm 31.7mm;   /* 默认学术页边距 */
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+    box-sizing: border-box;
+    position: relative;
+    contain: layout style;          /* limit reflow scope */
+    will-change: transform;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+/* ─── 页脚 ─── */
+.page-footer {
+    position: absolute;
+    bottom: 12mm;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 10pt;
+    color: #999999;
+    font-family: "Times New Roman", serif;
+}
+
+/* ─── 分页控制 ─── */
+.page-container h1, .page-container h2, .page-container h3 {
+    page-break-after: avoid;
+}
+.page-container table, .page-container pre, .page-container blockquote {
+    page-break-inside: avoid;
+}
+.page-container img {
+    page-break-inside: avoid;
+}
+
+/* ─── 页间分隔条（JS 插入） ─── */
+.page-break-spacer {
+    background: transparent;
+    position: relative;
+    z-index: 50;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: default;
+    display: flex;
+    flex-direction: column;
+    contain: layout style paint;    /* isolate repaint */
+}
+.page-break-spacer .spacer-page-end {
+    background: #ffffff;
+    border-bottom: 1px solid rgba(0,0,0,0.12);
+    position: relative;
+    z-index: 1;
+}
+.page-break-spacer .spacer-gap {
+    background: #d0d0d0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.page-break-spacer .spacer-page-start {
+    background: #ffffff;
+    border-top: 1px solid rgba(0,0,0,0.12);
+    position: relative;
+    z-index: 1;
+}
+.page-break-spacer-label {
+    font-size: 10px;
+    color: #999;
+    font-family: "Microsoft YaHei", sans-serif;
+    pointer-events: none;
+}
+
+/* ─── 页码计数器 ─── */
+.page-counter {
+    position: fixed;
+    bottom: 16px;
+    right: 24px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    padding: 4px 14px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-family: "Microsoft YaHei", sans-serif;
+    z-index: 9999;
+    pointer-events: none;
+    will-change: opacity;
+}
+
+/* ─── 全局滚动性能 ─── */
+* {
+    -webkit-font-smoothing: antialiased;
+}
+#editor-content > * {
+    content-visibility: auto;       /* skip rendering off-screen elements */
+    contain-intrinsic-size: auto 100px;
+}
+
+/* ===================================================================
+   基础排版 — 各预设共享
+   =================================================================== */
+.page-container p {
+    margin: 0.6em 0;
+    text-indent: 2em;
+    orphans: 2;
+    widows: 2;
+}
+
+.page-container p:first-child {
+    margin-top: 0;
+}
+
+.page-container a {
+    color: #1a73e8;
+    text-decoration: none;
+}
+
+.page-container a:hover {
+    text-decoration: underline;
+}
+
+.page-container img {
+    max-width: 100%;
+    display: block;
+    margin: 1em auto;
+}
+
+.page-container sup { font-size: 0.75em; vertical-align: super; }
+.page-container sub { font-size: 0.75em; vertical-align: sub; }
+.page-container u { text-decoration: underline; }
+.page-container del, .page-container s { text-decoration: line-through; color: #999; }
+
+/* ─── 对齐时去除首行缩连（居中/右对齐/两端对齐的段落不需要首行缩连） ─── */
+.page-container [style*="text-align: center"],
+.page-container [style*="text-align:center"],
+.page-container [style*="text-align: right"],
+.page-container [style*="text-align:right"],
+.page-container [style*="text-align: justify"],
+.page-container [style*="text-align:justify"] {
+    text-indent: 0 !important;
+}
+
+/* ─── 列表 ─── */
+.page-container ul, .page-container ol {
+    padding-left: 2em;
+    margin: 0.6em 0;
+}
+.page-container li {
+    margin: 0.25em 0;
+    text-indent: 0;
+}
+.page-container li p {
+    text-indent: 0;
+    margin: 0.2em 0;
+}
+
+/* ─── 分隔线 ─── */
+.page-container hr {
+    border: none;
+    border-top: 1px solid #d0d0d0;
+    margin: 1.5em 0;
+}
+
+/* ─── 表格基础样式（各预设可覆盖） ─── */
+.page-container table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+    font-size: 10.5pt;
+    table-layout: auto;
+}
+.page-container th,
+.page-container td {
+    border: 1px solid #c8c8c8;
+    padding: 6px 12px;
+    min-width: 60px;
+    min-height: 1.6em;
+    line-height: 1.5;
+    vertical-align: middle;
+    word-wrap: break-word;
+}
+.page-container th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* ─── 行内代码 ─── */
+.page-container code {
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+    font-size: 0.88em;
+    background-color: #f0f4f8;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: #d63384;
+    border: 1px solid #e2e8f0;
+}
+
+/* ─── 代码块 ─── */
+.page-container pre {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 14px 18px;
+    line-height: 1.55;
+    margin: 1em 0;
+    overflow-x: auto;
+}
+.page-container pre code {
+    background: transparent;
+    padding: 0;
+    color: #2d3748;
+    border: none;
+    font-size: 0.9em;
+}
+
+/* ─── 引用块 ─── */
+.page-container blockquote {
+    border-left: 4px solid #4a90d9;
+    margin: 0.8em 0;
+    padding: 0.5em 1em;
+    color: #555;
+    background-color: #f8f9ff;
+    border-radius: 0 4px 4px 0;
+}
+.page-container blockquote p {
+    text-indent: 0;
+    margin: 0.3em 0;
+}
+
+/* ─── Pygments 代码高亮容器 ─── */
+.page-container .highlight {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin: 1em 0;
+}
+.page-container .highlight pre {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+
+/* ===================================================================
+   预设一：学术 (academic) — 宋体正文 + 黑体标题，1.5倍行距
+   =================================================================== */
+.preset-academic .page-container {
+    padding: 25.4mm 31.7mm;
+    font-family: "SimSun", "宋体", "Times New Roman", serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #1a1a1a;
+}
+
+.preset-academic h1, .preset-academic h2, .preset-academic h3,
+.preset-academic h4, .preset-academic h5, .preset-academic h6 {
+    font-family: "SimHei", "黑体", sans-serif;
+    color: #000000;
+    margin-top: 1.2em;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+    line-height: 1.35;
+}
+.preset-academic h1 {
+    font-size: 18pt;
+    text-align: center;
+    padding-bottom: 0.3em;
+    border-bottom: none;
+}
+.preset-academic h2 {
+    font-size: 15pt;
+}
+.preset-academic h3 {
+    font-size: 13pt;
+}
+.preset-academic h4 {
+    font-size: 12pt;
+}
+.preset-academic h5, .preset-academic h6 {
+    font-size: 12pt;
+}
+
+.preset-academic table {
+    border-collapse: collapse;
+    width: auto;
+    margin: 1em auto;
+    font-size: 10.5pt;
+}
+.preset-academic th, .preset-academic td {
+    padding: 6px 14px;
+    text-align: center;
+    border: none;
+}
+/* 三线表 */
+.preset-academic thead {
+    border-top: 2px solid #000;
+    border-bottom: 1px solid #000;
+}
+.preset-academic tbody {
+    border-bottom: 2px solid #000;
+}
+.preset-academic th {
+    font-weight: bold;
+    background: transparent;
+}
+
+
+/* ===================================================================
+   预设二：现代 (modern) — 微软雅黑，紧凑行距，蓝色标题
+   =================================================================== */
+.preset-modern .page-container {
+    padding: 20mm 25mm;
+    font-family: "Microsoft YaHei", "微软雅黑", "Segoe UI", sans-serif;
+    font-size: 11pt;
+    line-height: 1.4;
+    color: #2d3748;
+}
+
+.preset-modern h1, .preset-modern h2, .preset-modern h3,
+.preset-modern h4, .preset-modern h5, .preset-modern h6 {
+    font-family: "Microsoft YaHei", "微软雅黑", "Segoe UI", sans-serif;
+    color: #1a5bb4;
+    margin-top: 1em;
+    margin-bottom: 0.4em;
+    font-weight: 600;
+    line-height: 1.3;
+}
+.preset-modern h1 {
+    font-size: 20pt;
+    border-bottom: 2px solid #1a5bb4;
+    padding-bottom: 0.25em;
+}
+.preset-modern h2 {
+    font-size: 15pt;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 0.15em;
+}
+.preset-modern h3 {
+    font-size: 13pt;
+}
+.preset-modern h4 {
+    font-size: 11pt;
+    color: #2d5f9a;
+}
+
+.preset-modern table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+    font-size: 10pt;
+}
+.preset-modern th, .preset-modern td {
+    border: 1px solid #dee2e6;
+    padding: 8px 12px;
+    text-align: left;
+}
+.preset-modern th {
+    background-color: #e8f0fe;
+    font-weight: 600;
+    color: #1a5bb4;
+    border-bottom: 2px solid #1a5bb4;
+}
+.preset-modern blockquote {
+    border-left-color: #1a5bb4;
+    background-color: #f0f5ff;
+}
+
+
+/* ===================================================================
+   预设三：经典 (classic) — 仿宋正文 + 黑体标题，2倍行距
+   =================================================================== */
+.preset-classic .page-container {
+    padding: 30mm 31.7mm 25.4mm 31.7mm;
+    font-family: "FangSong", "仿宋", "STFangsong", serif;
+    font-size: 12pt;
+    line-height: 2.0;
+    color: #222222;
+}
+
+.preset-classic h1, .preset-classic h2, .preset-classic h3,
+.preset-classic h4, .preset-classic h5, .preset-classic h6 {
+    font-family: "SimHei", "黑体", sans-serif;
+    color: #333333;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+    line-height: 1.4;
+}
+.preset-classic h1 {
+    font-size: 18pt;
+    text-align: center;
+}
+.preset-classic h2 {
+    font-size: 15pt;
+}
+.preset-classic h3 {
+    font-size: 13pt;
+}
+.preset-classic h4, .preset-classic h5, .preset-classic h6 {
+    font-size: 12pt;
+}
+
+.preset-classic table {
+    border-collapse: collapse;
+    width: auto;
+    margin: 1em auto;
+    font-size: 10.5pt;
+}
+.preset-classic th, .preset-classic td {
+    padding: 6px 14px;
+    text-align: center;
+    border: none;
+}
+.preset-classic thead {
+    border-top: 2px solid #333;
+    border-bottom: 1px solid #333;
+}
+.preset-classic tbody {
+    border-bottom: 2px solid #333;
+}
+.preset-classic th {
+    font-weight: bold;
+    background: transparent;
+}
+.preset-classic blockquote {
+    border-left-color: #666;
+    background-color: #f5f5f0;
+    color: #444;
+}
+
+
+/* ===================================================================
+   JSON / XML / Terminal — 覆盖 .page-container pre/code 基础样式
+   =================================================================== */
+.page-container .json-viewer pre,
+.page-container .xml-viewer pre,
+.page-container .terminal-ui pre,
+.page-container .code-editor pre {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    line-height: inherit;
+}
+.page-container .json-viewer pre code,
+.page-container .xml-viewer pre code,
+.page-container .terminal-ui pre code,
+.page-container .code-editor pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+    border: none;
+    font-size: 13px;
+}
+
+/* ===================================================================
+   JSON Viewer — 结构化美化显示
+   =================================================================== */
+.json-viewer {
+    margin: 1em 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    font-family: "Cascadia Code", "Fira Code", Consolas, "Courier New", monospace;
+    font-size: 13px;
+    text-indent: 0;
+    contain: layout style paint;
+}
+.jv-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-size: 12px;
+    font-family: "Microsoft YaHei", sans-serif;
+    user-select: none;
+}
+.jv-icon {
+    font-size: 14px;
+    font-weight: bold;
+    opacity: 0.9;
+}
+.jv-title {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.jv-copy-btn {
+    margin-left: auto;
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.jv-copy-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+.jv-body {
+    background: #1e1e2e !important;
+    color: #cdd6f4 !important;
+    padding: 14px 0 14px 0;
+    margin: 0;
+    overflow-x: auto;
+    line-height: 1.6;
+    border: none !important;
+    border-radius: 0;
+}
+.jv-body code {
+    background: transparent !important;
+    padding: 0;
+    color: inherit !important;
+    border: none !important;
+    font-size: 13px;
+}
+.jv-line {
+    display: block;
+    padding: 0 14px 0 0;
+}
+.jv-line:hover {
+    background: rgba(255,255,255,0.04);
+}
+.jv-ln {
+    display: inline-block;
+    width: 40px;
+    text-align: right;
+    padding-right: 14px;
+    margin-right: 10px;
+    color: #585b70;
+    border-right: 1px solid #313244;
+    user-select: none;
+    font-size: 11px;
+}
+/* JSON token colors (Catppuccin Mocha palette) */
+.jv-key { color: #cba6f7; }         /* 紫色 — 键 */
+.jv-string { color: #a6e3a1; }      /* 绿色 — 字符串值 */
+.jv-number { color: #89b4fa; }      /* 蓝色 — 数字 */
+.jv-bool { color: #fab387; }        /* 橙色 — 布尔 */
+.jv-null { color: #6c7086; font-style: italic; } /* 灰色 — null */
+.jv-brace, .jv-bracket { color: #f5c2e7; font-weight: bold; }
+.jv-colon { color: #9399b2; }
+.jv-comma { color: #9399b2; }
+/* 折叠 */
+.jv-toggle {
+    cursor: pointer;
+    user-select: none;
+    color: #89b4fa;
+    font-size: 10px;
+    margin-right: 2px;
+    transition: transform 0.15s;
+    display: inline-block;
+}
+.jv-toggle:hover { color: #b4befe; }
+.jv-toggle.collapsed { transform: rotate(-90deg); }
+.jv-collapsible.collapsed {
+    display: none;
+}
+/* 折叠占位 */
+.jv-collapsed-hint {
+    color: #6c7086;
+    font-style: italic;
+    font-size: 11px;
+}
+
+
+/* ===================================================================
+   XML Viewer — 结构化美化显示
+   =================================================================== */
+.xml-viewer {
+    margin: 1em 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    font-family: "Cascadia Code", "Fira Code", Consolas, "Courier New", monospace;
+    font-size: 13px;
+    text-indent: 0;
+    contain: layout style paint;
+}
+.xv-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: #fff;
+    font-size: 12px;
+    font-family: "Microsoft YaHei", sans-serif;
+    user-select: none;
+}
+.xv-icon {
+    font-size: 14px;
+    font-weight: bold;
+    opacity: 0.9;
+}
+.xv-title {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.xv-copy-btn {
+    margin-left: auto;
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.xv-copy-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+.xv-body {
+    background: #1e1e2e !important;
+    color: #cdd6f4 !important;
+    padding: 14px 0 14px 0;
+    margin: 0;
+    overflow-x: auto;
+    line-height: 1.6;
+    border: none !important;
+    border-radius: 0;
+}
+.xv-body code {
+    background: transparent !important;
+    padding: 0;
+    color: inherit !important;
+    border: none !important;
+    font-size: 13px;
+}
+.xv-line {
+    display: block;
+    padding: 0 14px 0 0;
+}
+.xv-line:hover {
+    background: rgba(255,255,255,0.04);
+}
+.xv-ln {
+    display: inline-block;
+    width: 40px;
+    text-align: right;
+    padding-right: 14px;
+    margin-right: 10px;
+    color: #585b70;
+    border-right: 1px solid #313244;
+    user-select: none;
+    font-size: 11px;
+}
+/* XML token colors */
+.xv-tag { color: #89b4fa; font-weight: 600; }   /* 蓝色 — 标签名 */
+.xv-attr { color: #cba6f7; }                    /* 紫色 — 属性名 */
+.xv-attrval { color: #a6e3a1; }                 /* 绿色 — 属性值 */
+.xv-comment { color: #6c7086; font-style: italic; } /* 灰色 — 注释 */
+
+
+/* ===================================================================
+   Terminal UI — 高级终端命令展示
+   =================================================================== */
+.terminal-ui {
+    margin: 1em 0;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #373e47;
+    font-family: "Cascadia Code", "Fira Code", Consolas, "Courier New", monospace;
+    font-size: 13px;
+    text-indent: 0;
+    contain: layout style paint;
+}
+.term-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    background: linear-gradient(180deg, #2d333b 0%, #22272e 100%);
+    border-bottom: 1px solid #373e47;
+    user-select: none;
+}
+.term-dots {
+    display: flex;
+    gap: 7px;
+    margin-right: 14px;
+}
+.term-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+.term-dot-red { background: #ff5f57; }
+.term-dot-yellow { background: #febc2e; }
+.term-dot-green { background: #28c840; }
+.term-title {
+    flex: 1;
+    text-align: center;
+    color: #768390;
+    font-size: 12px;
+    font-family: "Microsoft YaHei", -apple-system, sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+.term-copy-btn {
+    background: rgba(255,255,255,0.08);
+    color: #768390;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 5px;
+    padding: 3px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: "Microsoft YaHei", sans-serif;
+}
+.term-copy-btn:hover {
+    background: rgba(255,255,255,0.15);
+    color: #adbac7;
+    border-color: rgba(255,255,255,0.2);
+}
+.term-body {
+    background: #0d1117 !important;
+    color: #e6edf3 !important;
+    padding: 20px 28px;
+    margin: 0;
+    overflow-x: auto;
+    line-height: 1.8;
+    border: none !important;
+    border-radius: 0;
+    min-height: 60px;
+    box-sizing: border-box;
+}
+.term-body code {
+    display: block !important;
+    background: transparent !important;
+    padding: 0;
+    color: inherit !important;
+    border: none !important;
+    font-size: 13px;
+}
+.term-line {
+    display: block;
+    padding: 2px 16px 2px 4px;
+}
+.term-line:hover {
+    background: rgba(255,255,255,0.04);
+    border-radius: 2px;
+}
+.term-prompt {
+    color: #3fb950 !important;
+    font-weight: bold;
+    margin-right: 10px;
+    user-select: none;
+}
+/* 命令名（第一个词） */
+.term-cmd-name {
+    color: #79c0ff !important;
+    font-weight: 600;
+}
+/* 参数/选项 (-x, /s, --flag) */
+.term-flag {
+    color: #ffa657 !important;
+}
+/* 字符串 */
+.term-str {
+    color: #a5d6ff !important;
+}
+/* 变量 ($VAR, %VAR%) */
+.term-var {
+    color: #d2a8ff !important;
+}
+/* 数字 */
+.term-num {
+    color: #79c0ff !important;
+}
+/* 管道/重定向 (|, >, >>, <) */
+.term-op {
+    color: #ff7b72 !important;
+    font-weight: bold;
+}
+.term-cmd {
+    color: #e6edf3 !important;
+}
+.term-comment {
+    color: #8b949e !important;
+    font-style: italic;
+}
+.term-ln {
+    display: inline-block;
+    width: 40px;
+    text-align: right;
+    padding-right: 14px;
+    margin-right: 14px;
+    color: #585b70;
+    border-right: 1px solid #313244;
+    user-select: none;
+    font-size: 11px;
+}
+.term-empty {
+    display: block;
+    height: 0.5em;
+}
+
+
+/* ===================================================================
+   Code Editor — 编辑器风格代码展示（脚本语言）
+   =================================================================== */
+.code-editor {
+    margin: 1em 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    font-family: "Cascadia Code", "Fira Code", Consolas, "Courier New", monospace;
+    font-size: 13px;
+    text-indent: 0;
+    contain: layout style paint;
+}
+.ce-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: linear-gradient(180deg, #2d333b 0%, #22272e 100%);
+    color: #adbac7;
+    font-size: 12px;
+    font-family: "Microsoft YaHei", -apple-system, sans-serif;
+    user-select: none;
+    border-bottom: 1px solid #373e47;
+}
+.ce-icon {
+    font-size: 14px;
+    opacity: 0.85;
+}
+.ce-title {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.ce-copy-btn {
+    margin-left: auto;
+    background: rgba(255,255,255,0.08);
+    color: #768390;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 5px;
+    padding: 3px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: "Microsoft YaHei", sans-serif;
+}
+.ce-copy-btn:hover {
+    background: rgba(255,255,255,0.15);
+    color: #adbac7;
+    border-color: rgba(255,255,255,0.2);
+}
+.ce-body {
+    background: #1e1e2e !important;
+    color: #cdd6f4 !important;
+    padding: 14px 0;
+    margin: 0;
+    overflow-x: auto;
+    line-height: 1.7;
+    border: none !important;
+    border-radius: 0;
+    min-height: 56px;
+    box-sizing: border-box;
+}
+.ce-body code {
+    display: block !important;
+    background: transparent !important;
+    padding: 0;
+    color: inherit !important;
+    border: none !important;
+    font-size: 13px;
+}
+.ce-line {
+    display: block;
+    padding: 1px 14px 1px 0;
+}
+.ce-line:hover {
+    background: rgba(255,255,255,0.04);
+}
+.ce-ln {
+    display: inline-block;
+    width: 40px;
+    text-align: right;
+    padding-right: 14px;
+    margin-right: 14px;
+    color: #585b70;
+    border-right: 1px solid #313244;
+    user-select: none;
+    font-size: 11px;
+}

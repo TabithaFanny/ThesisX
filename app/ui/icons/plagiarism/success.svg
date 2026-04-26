@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 成功图标 - 对勾圆形+光晕 -->
+  <defs>
+    <linearGradient id="successGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#16a34a"/>
+    </linearGradient>
+    <radialGradient id="successGlow">
+      <stop offset="0%" stop-color="#22c55e" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 光晕效果 -->
+  <circle cx="12" cy="12" r="11" fill="url(#successGlow)"/>
+
+  <!-- 圆形主体 -->
+  <circle cx="12" cy="12" r="10"
+          fill="url(#successGrad)" stroke="#15803d" stroke-width="1.5"/>
+
+  <!-- 对勾 -->
+  <path d="M7 12l3.5 3.5L17 8" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

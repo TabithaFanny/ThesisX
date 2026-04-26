@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 数据库图标 - 立体层叠效果 -->
+  <defs>
+    <linearGradient id="dbGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="dbGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 顶部椭圆 -->
+  <ellipse cx="12" cy="5" rx="8" ry="3"
+           fill="url(#dbGrad)" stroke="#7c3aed" stroke-width="1.5"/>
+
+  <!-- 侧面 -->
+  <path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5"
+        stroke="#7c3aed" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 中间层 -->
+  <ellipse cx="12" cy="12" rx="8" ry="3"
+           fill="url(#dbGrad2)" stroke="#7c3aed" stroke-width="1.5" opacity="0.8"/>
+
+  <!-- 底部层 -->
+  <ellipse cx="12" cy="19" rx="8" ry="3"
+           fill="url(#dbGrad2)" stroke="#7c3aed" stroke-width="1.5"/>
+
+  <!-- 高光 -->
+  <ellipse cx="12" cy="5" rx="6" ry="2" fill="#ffffff" opacity="0.2"/>
+</svg>

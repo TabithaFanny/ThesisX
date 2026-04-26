@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- 验证图标 - 对勾+放大镜 -->
+  <defs>
+    <linearGradient id="verifyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 盾牌主体 -->
+  <path d="M12 2L4 6v6c0 5.5 3.4 10.3 8 12 4.6-1.7 8-6.5 8-12V6l-8-4z"
+        fill="url(#verifyGrad)" stroke="#1d4ed8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 盾牌高光 -->
+  <path d="M12 3L5 6.5v5c0 4.5 2.8 8.5 7 10" stroke="#ffffff" stroke-width="1" stroke-linecap="round" opacity="0.3" fill="none"/>
+
+  <!-- 对勾 -->
+  <path d="M9 12l2 2 4-4" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
