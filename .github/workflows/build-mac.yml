@@ -1,0 +1,55 @@
+name: Build Mac App
+
+on:
+  workflow_dispatch:  # 手动触发
+  push:
+    tags:
+      - 'v*'  # 推送 tag 时自动打包
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Convert icon to icns (if needed)
+      run: |
+        if [ ! -f "app/resources/thesisx_icon.icns" ]; then
+          echo "Warning: .icns icon not found, will use default"
+        fi
+
+    - name: Build Mac App
+      run: |
+        pyinstaller build_mac.spec --noconfirm
+
+    - name: Create DMG
+      run: |
+        hdiutil create -volname "文表智联" -srcfolder "dist/文表智联.app" -ov -format UDZO "文表智联-mac.dmg"
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: 文表智联-macOS
+        path: 文表智联-mac.dmg
+        retention-days: 30
+
+    - name: Create Release (if tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: 文表智联-mac.dmg
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
