@@ -123,6 +123,7 @@ addopts = [
     "--cov=app",            # 代码覆盖率
     "--cov-report=term-missing",  # 显示未覆盖的行
     "--cov-report=html",    # 生成 HTML 报告
+    "--cov-fail-under=10",  # 最低覆盖率阈值（逐步提高）
 ]
 # 标记
 markers = [
@@ -145,6 +146,8 @@ omit = [
 [tool.coverage.report]
 # 精度
 precision = 2
+# 最低覆盖率阈值（逐步提高）
+fail_under = 10
 # 显示缺失的行
 show_missing = true
 # 跳过覆盖的文件
@@ -171,11 +174,24 @@ warn_unused_configs = true
 no_implicit_optional = true
 # 严格可选
 strict_optional = true
-# 忽略缺失的导入
-ignore_missing_imports = true
 # 排除的目录
 exclude = [
     "venv312",
     "build",
     "dist",
 ]
+
+[[tool.mypy.overrides]]
+module = [
+    "PyQt6.*",
+    "fitz",
+    "pdfplumber",
+    "openpyxl.*",
+    "docx.*",
+    "pptx.*",
+    "PyPDF2.*",
+    "markdownify",
+    "markdown",
+    "pygments.*",
+]
+ignore_missing_imports = true

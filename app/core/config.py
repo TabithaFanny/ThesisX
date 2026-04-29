@@ -30,6 +30,11 @@ _DEFAULTS = {
     "shortcut_overrides": {},
     # Auto-recovery: max backup versions
     "max_backup_versions": 5,
+    # Agent Team (AI 论文初稿助手)
+    "agent_team_path": "",
+    "agent_team_default_journal": "中文核心",
+    "agent_team_default_mode": "mock",
+    "agent_team_default_budget_cny": 10.0,
 }
 
 

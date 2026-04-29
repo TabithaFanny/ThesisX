@@ -186,8 +186,9 @@ class PreviewWidget(QWidget):
         # Handle renderer process crashes
         self._view.page().renderProcessTerminated.connect(self._on_renderer_crash)
 
-        # Load the editable page
-        self._base_url = QUrl.fromLocalFile(os.path.expanduser("~") + "/")
+        # Load the editable page — base URL points to resources/ so
+        # relative paths (e.g. katex/katex.min.css) resolve correctly.
+        self._base_url = QUrl.fromLocalFile(_CSS_DIR + os.sep)
         full_html = self._build_html("")
         self._view.setHtml(full_html, self._base_url)
 
@@ -2478,8 +2479,12 @@ class PreviewWidget(QWidget):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<link rel="stylesheet" href="katex/katex.min.css"
+      integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV"
+      crossorigin="anonymous">
+<script src="katex/katex.min.js"
+        integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8"
+        crossorigin="anonymous"></script>
 <style>
 {self._doc_css}
 {self._pygments_css}

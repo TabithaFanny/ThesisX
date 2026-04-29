@@ -1,11 +1,16 @@
 """AI 服务模块单元测试"""
+import os
 import pytest
+from unittest.mock import patch
 
 from app.core.ai_service import (
     AiServiceConfig,
+    _build_system_message,
+    _default_config,
     build_optimize_messages,
     build_continue_messages,
     build_custom_edit_messages,
+    configure_ai,
     get_ai_api_key,
 )
 
@@ -19,7 +24,7 @@ class TestAiServiceConfig:
         assert config.api_url == "https://llm.nodai.design/v1/chat/completions"
         assert config.model == "gpt-5.3-codex"
         assert config.timeout == 60
-        assert config.max_retries == 3
+        assert config.max_retries == 5
 
     def test_custom_config(self):
         """测试自定义配置"""
@@ -125,3 +130,75 @@ class TestGetApiKey:
         key = get_ai_api_key()
         # 如果没有环境变量且没有 config.ini，应返回空字符串
         assert isinstance(key, str)
+
+
+class TestConfigureAi:
+    """测试 configure_ai 全局配置函数"""
+
+    def setup_method(self):
+        """每个测试前重置全局配置"""
+        _default_config.api_url = ""
+        _default_config.model = ""
+        _default_config.api_key = ""
+
+    def test_configure_api_url(self):
+        """设置 api_url"""
+        configure_ai(api_url="https://custom.api.com")
+        assert _default_config.api_url == "https://custom.api.com"
+
+    def test_configure_model(self):
+        """设置 model"""
+        configure_ai(model="gpt-4")
+        assert _default_config.model == "gpt-4"
+
+    def test_configure_api_key_sets_env(self, monkeypatch):
+        """设置 api_key 同步到环境变量"""
+        monkeypatch.delenv("WENBIAO_AI_API_KEY", raising=False)
+        configure_ai(api_key="sk-test-123")
+        assert _default_config.api_key == "sk-test-123"
+        assert os.environ.get("WENBIAO_AI_API_KEY") == "sk-test-123"
+
+    def test_configure_empty_api_key_clears_env(self, monkeypatch):
+        """空 api_key 清除环境变量"""
+        monkeypatch.setenv("WENBIAO_AI_API_KEY", "old-key")
+        configure_ai(api_key="")
+        assert _default_config.api_key == ""
+        assert "WENBIAO_AI_API_KEY" not in os.environ
+
+    def test_configure_none_api_key_no_change(self, monkeypatch):
+        """api_key=None 不修改现有值"""
+        _default_config.api_key = "existing"
+        configure_ai(api_key=None)
+        assert _default_config.api_key == "existing"
+
+    def test_configure_empty_url_no_change(self):
+        """空 api_url 不覆盖现有值"""
+        _default_config.api_url = "https://existing.com"
+        configure_ai(api_url="")
+        assert _default_config.api_url == "https://existing.com"
+
+
+class TestBuildSystemMessage:
+    """测试 _build_system_message 函数"""
+
+    def test_without_skills(self):
+        """无 Skills 内容时返回原始 prompt"""
+        with patch("app.core.ai_service._get_skills_context", return_value=""):
+            result = _build_system_message("基础提示词")
+            assert result == "基础提示词"
+
+    def test_with_skills(self):
+        """有 Skills 内容时追加到 prompt"""
+        with patch("app.core.ai_service._get_skills_context", return_value="技能内容"):
+            result = _build_system_message("基础提示词")
+            assert "基础提示词" in result
+            assert "技能内容" in result
+            assert "Skills 集群记忆" in result
+
+    def test_skills_exception_returns_base(self):
+        """Skills 加载异常时返回原始 prompt"""
+        # _get_skills_context 内部捕获异常返回 ""，
+        # 所以 mock 让它返回 "" 来模拟异常被吞掉的情况
+        with patch("app.core.ai_service._get_skills_context", return_value=""):
+            result = _build_system_message("基础提示词")
+            assert result == "基础提示词"

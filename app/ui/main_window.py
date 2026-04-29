@@ -56,6 +56,7 @@ from app.core.ai_service import (
     build_smart_insert_messages,
 )
 from app.core.config import Config
+from app.core.worker_manager import WorkerManager
 from app.core.db_plagiarism_service_optimized import (
     DbPlagiarismWorkerOptimized,
     merge_results,
@@ -127,6 +128,9 @@ class MainWindow(QMainWindow):
         self.renderer = MarkdownRenderer()
         self.outline_parser = OutlineParser()
         self.exporter = Exporter()
+
+        # Centralized worker lifecycle management
+        self._workers = WorkerManager()
 
         # Preview CSS for export
         self._preview_css = self._load_preview_css()
@@ -480,6 +484,12 @@ class MainWindow(QMainWindow):
         rewrite_all_action = QAction("⚡ 一键降重", self)
         rewrite_all_action.triggered.connect(self._plagiarism_rewrite_all)
         tools_menu.addAction(rewrite_all_action)
+
+        tools_menu.addSeparator()
+
+        agent_action = QAction("📝 AI 论文初稿助手...", self)
+        agent_action.triggered.connect(self._show_agent_paper_dialog)
+        tools_menu.addAction(agent_action)
 
         tools_menu.addSeparator()
 
@@ -1294,9 +1304,7 @@ class MainWindow(QMainWindow):
 
     def _cancel_ai_worker(self):
         """Cancel any running AI worker and wait for it to stop."""
-        if hasattr(self, "_ai_worker") and self._ai_worker and self._ai_worker.isRunning():
-            self._ai_worker.cancel()
-            self._ai_worker.wait(2000)
+        self._workers.cancel("ai")
 
     def _ai_optimize(self):
         """AI 降重优化选中内容 — 基于全文上下文，结果用 Track Changes 展示。"""
@@ -1337,7 +1345,6 @@ class MainWindow(QMainWindow):
         self._cancel_ai_worker()
 
         worker = AiWorker(messages, max_tokens=MAX_TOKENS_OPTIMIZE, temperature=TEMP_OPTIMIZE)
-        self._ai_worker = worker
         worker.status_update.connect(lambda msg: self.status_bar.showMessage(msg))
 
         def _on_finished(response):
@@ -1359,7 +1366,7 @@ class MainWindow(QMainWindow):
         worker.error_occurred.connect(
             lambda err: self.status_bar.showMessage(f"❌ AI 错误：{err}", 8000)
         )
-        worker.start()
+        self._workers.start("ai", worker)
 
     @staticmethod
     def _find_sections_needing_content(
@@ -1531,7 +1538,6 @@ class MainWindow(QMainWindow):
         self._cancel_ai_worker()
 
         worker = AiWorker(messages, temperature=TEMP_CONTINUE)
-        self._ai_worker = worker
         worker.status_update.connect(lambda msg: self.status_bar.showMessage(msg))
 
         worker.chunk_received.connect(
@@ -1561,7 +1567,7 @@ class MainWindow(QMainWindow):
 
         worker.finished_ok.connect(_on_finished)
         worker.error_occurred.connect(_on_error)
-        worker.start()
+        self._workers.start("ai", worker)
 
     @staticmethod
     def _split_markdown_sections(text: str, max_section_chars: int = 9000) -> list:
@@ -1697,7 +1703,6 @@ class MainWindow(QMainWindow):
 
         _batch_temp = TEMP_EDIT if self._ai_batch_mode == "custom" else TEMP_OPTIMIZE
         worker = AiWorker(msgs, max_tokens=_batch_max, temperature=_batch_temp)
-        self._ai_worker = worker
         worker.status_update.connect(lambda msg: self.status_bar.showMessage(msg))
 
         def _on_done(response):
@@ -1719,7 +1724,7 @@ class MainWindow(QMainWindow):
 
         worker.finished_ok.connect(_on_done)
         worker.error_occurred.connect(_on_err)
-        worker.start()
+        self._workers.start("ai", worker)
 
     def _finish_batch_processing(self, cancelled: bool):
         total = len(self._ai_batch_sections)
@@ -1833,7 +1838,6 @@ class MainWindow(QMainWindow):
 
         msgs = build_section_edit_messages(section, self._tc_stream_instruction, idx, total)
         worker = AiWorker(msgs, max_tokens=MAX_TOKENS_SECTION, temperature=TEMP_SECTION_EDIT)
-        self._ai_worker = worker
         worker.status_update.connect(lambda msg: self.status_bar.showMessage(msg))
 
         def _on_done(response, _idx=idx, _section=section):
@@ -1864,7 +1868,7 @@ class MainWindow(QMainWindow):
 
         worker.finished_ok.connect(_on_done)
         worker.error_occurred.connect(_on_err)
-        worker.start()
+        self._workers.start("ai", worker)
 
     def _render_streaming_diff(self, scroll_to_section: int = -1):
         """Build and display the progressive section diff.
@@ -2221,7 +2225,6 @@ class MainWindow(QMainWindow):
         msgs = build_custom_edit_messages(segment, focused_instruction)
 
         worker = AiWorker(msgs, temperature=TEMP_EDIT)
-        self._ai_worker = worker
         worker.status_update.connect(lambda msg: self.status_bar.showMessage(msg))
         worker.finished_ok.connect(
             lambda resp, _doc=full_doc, _seg=segment: self._apply_ai_focus_modify_result(
@@ -2231,7 +2234,7 @@ class MainWindow(QMainWindow):
         worker.error_occurred.connect(
             lambda err: self.status_bar.showMessage(f"❌ AI 错误：{err}", 8000)
         )
-        worker.start()
+        self._workers.start("ai", worker)
 
     def _apply_ai_focus_modify_result(self, full_doc: str, segment: str, response: str):
         """将大文档局部修订结果合并回全文，并展示 Track Changes。"""
@@ -2265,7 +2268,6 @@ class MainWindow(QMainWindow):
         self._cancel_ai_worker()
 
         worker = AiWorker(messages, temperature=temperature)
-        self._ai_worker = worker
         worker.status_update.connect(lambda msg: self.status_bar.showMessage(msg))
 
         worker.chunk_received.connect(
@@ -2281,7 +2283,7 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage("🖼️ 正在搜索并插入图片/图表...")
                 pixabay_key = self.config.get("pixabay_api_key", "")
                 img_worker = ImageProcessWorker(final_text, pixabay_key=pixabay_key)
-                self._img_worker = img_worker
+                self._workers._workers["img"] = img_worker
 
                 def _on_images_done(processed_md, _id2=_id):
                     rendered = self.renderer.render(processed_md)
@@ -2319,7 +2321,7 @@ class MainWindow(QMainWindow):
             polish_worker = AiWorker(
                 polish_msgs, max_tokens=MAX_TOKENS_REWRITE, temperature=TEMP_REWRITE
             )
-            self._ai_polish_worker = polish_worker
+            self._workers._workers["ai_polish"] = polish_worker
 
             def _on_polish_done(polished_text):
                 final_text = (polished_text or "").strip() or full_text
@@ -2332,25 +2334,24 @@ class MainWindow(QMainWindow):
 
             polish_worker.finished_ok.connect(_on_polish_done)
             polish_worker.error_occurred.connect(_on_polish_error)
-            polish_worker.start()
+            self._workers.start("ai_polish", polish_worker)
 
         worker.finished_ok.connect(_on_ai_finished)
         worker.error_occurred.connect(lambda err, _id=ai_id: self.preview.ai_error_block(_id, err))
-        worker.start()
+        self._workers.start("ai", worker)
 
     def _run_ai_smart(self, messages: list):
         """Run AI in smart mode: collect full response, then show track changes."""
         self._cancel_ai_worker()
 
         worker = AiWorker(messages)
-        self._ai_worker = worker
         worker.status_update.connect(lambda msg: self.status_bar.showMessage(msg))
 
         worker.finished_ok.connect(self._apply_ai_smart_result)
         worker.error_occurred.connect(
             lambda err: self.status_bar.showMessage(f"❌ AI 错误：{err}", 8000)
         )
-        worker.start()
+        self._workers.start("ai", worker)
 
     def _apply_ai_smart_result(self, response: str):
         """Compute word-level diff and show inline track-changes view.
@@ -2369,7 +2370,7 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("🖼️ 正在搜索并插入图片/图表...")
             pixabay_key = self.config.get("pixabay_api_key", "")
             img_worker = ImageProcessWorker(modified, pixabay_key=pixabay_key)
-            self._img_worker = img_worker
+            self._workers._workers["img"] = img_worker
 
             def _on_images_done(processed_md):
                 self._finish_smart_result(processed_md)
@@ -2582,17 +2583,10 @@ class MainWindow(QMainWindow):
 
     def _run_ai_plagiarism_check(self, sentences: list):
         """运行 AI 查重分析（并行路径之一）。"""
-        if (
-            hasattr(self, "_ai_plag_worker")
-            and self._ai_plag_worker
-            and self._ai_plag_worker.isRunning()
-        ):
-            self._ai_plag_worker.cancel()
-            self._ai_plag_worker.wait(2000)
+        self._workers.cancel("ai_plag")
 
         msgs = build_check_messages(sentences)
         worker = AiWorker(msgs)
-        self._ai_plag_worker = worker
 
         def _on_done(response):
             results = parse_check_result(response, sentences)
@@ -2611,21 +2605,14 @@ class MainWindow(QMainWindow):
 
         worker.finished_ok.connect(_on_done)
         worker.error_occurred.connect(_on_err)
-        worker.start()
+        self._workers.start("ai_plag", worker)
 
     def _run_db_plagiarism_check(self, sentences: list):
         """运行数据库查重（并行路径之二）。"""
-        if (
-            hasattr(self, "_db_plag_worker")
-            and self._db_plag_worker
-            and self._db_plag_worker.isRunning()
-        ):
-            self._db_plag_worker.cancel()
-            self._db_plag_worker.wait(2000)
+        self._workers.cancel("db_plag")
 
         # 使用优化版 Worker（并发 API + 缓存）
         worker = DbPlagiarismWorkerOptimized(sentences, max_workers=5)
-        self._db_plag_worker = worker
 
         def _on_progress(done, total):
             self.plagiarism_panel.set_loading_status(
@@ -2654,8 +2641,7 @@ class MainWindow(QMainWindow):
         worker.progress.connect(_on_progress)
         worker.finished_ok.connect(_on_done)
         worker.error_occurred.connect(_on_err)
-        worker.start()
-
+        self._workers.start("db_plag", worker)
     def _try_merge_plagiarism_results(self):
         """两路都完成后合并结果并展示。"""
         if not self._plag_ai_done or not self._plag_db_done:
@@ -2743,16 +2729,9 @@ class MainWindow(QMainWindow):
             aggressive=False
         )
 
-        if (
-            hasattr(self, "_ai_plag_worker")
-            and self._ai_plag_worker
-            and self._ai_plag_worker.isRunning()
-        ):
-            self._ai_plag_worker.cancel()
-            self._ai_plag_worker.wait(2000)
+        self._workers.cancel("ai_plag")
 
         worker = AiWorker(msgs, max_tokens=MAX_TOKENS_REWRITE)
-        self._ai_plag_worker = worker
 
         def _on_done(response):
             rewritten = response.strip()
@@ -2767,7 +2746,7 @@ class MainWindow(QMainWindow):
         worker.error_occurred.connect(
             lambda err: self.status_bar.showMessage(f"❌ 降重失败：{err}", 8000)
         )
-        worker.start()
+        self._workers.start("ai_plag", worker)
 
     def _plagiarism_rewrite_all(self):
         """一键降重所有高风险句子。"""
@@ -2784,16 +2763,9 @@ class MainWindow(QMainWindow):
 
     def _run_ai_batch_rewrite(self, messages: list, flagged: list):
         """运行批量降重 AI，完成后用 Track Changes 显示。"""
-        if (
-            hasattr(self, "_ai_plag_worker")
-            and self._ai_plag_worker
-            and self._ai_plag_worker.isRunning()
-        ):
-            self._ai_plag_worker.cancel()
-            self._ai_plag_worker.wait(2000)
+        self._workers.cancel("ai_plag")
 
         worker = AiWorker(messages)
-        self._ai_plag_worker = worker
 
         def _on_done(response):
             rewrites = parse_rewrite_result(response)
@@ -2815,7 +2787,7 @@ class MainWindow(QMainWindow):
 
         worker.finished_ok.connect(_on_done)
         worker.error_occurred.connect(_on_err)
-        worker.start()
+        self._workers.start("ai_plag", worker)
 
     # ── 智能迭代降重 ──
 
@@ -2914,21 +2886,14 @@ class MainWindow(QMainWindow):
 
     def _run_iterative_ai_rewrite(self, messages: list, flagged: list):
         """运行迭代降重的 AI 调用。"""
-        if (
-            hasattr(self, "_ai_iterative_worker")
-            and self._ai_iterative_worker
-            and self._ai_iterative_worker.isRunning()
-        ):
-            self._ai_iterative_worker.cancel()
-            self._ai_iterative_worker.wait(2000)
+        self._workers.cancel("ai_iterative")
 
         worker = AiWorker(messages)
-        self._ai_iterative_worker = worker
         self._iterative_flagged = flagged
 
         worker.finished_ok.connect(self._on_iterative_rewrite_done)
         worker.error_occurred.connect(self._on_iterative_rewrite_error)
-        worker.start()
+        self._workers.start("ai_iterative", worker)
 
     def _on_iterative_rewrite_done(self, response: str):
         """迭代降重 AI 完成回调。"""
@@ -2991,21 +2956,14 @@ class MainWindow(QMainWindow):
 
         msgs = build_check_messages(sentences)
 
-        if (
-            hasattr(self, "_ai_iterative_check_worker")
-            and self._ai_iterative_check_worker
-            and self._ai_iterative_check_worker.isRunning()
-        ):
-            self._ai_iterative_check_worker.cancel()
-            self._ai_iterative_check_worker.wait(2000)
+        self._workers.cancel("ai_iterative_check")
 
         worker = AiWorker(msgs)
-        self._ai_iterative_check_worker = worker
         self._iterative_sentences = sentences
 
         worker.finished_ok.connect(self._on_iterative_check_done)
         worker.error_occurred.connect(self._on_iterative_check_error)
-        worker.start()
+        self._workers.start("ai_iterative_check", worker)
 
     def _on_iterative_check_done(self, response: str):
         """迭代查重完成回调。"""
@@ -3099,6 +3057,44 @@ class MainWindow(QMainWindow):
         }})();
         """
         self.preview.exec_js(js)
+
+    def _show_agent_paper_dialog(self):
+        """Open the AI paper draft assistant dialog."""
+        from app.ui.agent_team_dialog import AgentTeamDialog
+
+        dialog = AgentTeamDialog(config=self.config, parent=self)
+        dialog.paper_import_requested.connect(self._import_agent_paper)
+        dialog.show()
+        # Keep a reference to prevent garbage collection
+        self._agent_dialog = dialog
+
+    def _import_agent_paper(self, markdown: str, mode: str = "new"):
+        """Import generated paper into the editor."""
+        if mode == "new":
+            self._current_markdown = markdown
+            self.preview.set_content_from_markdown(markdown)
+            self._update_title()
+        elif mode == "replace":
+            if self._current_markdown:
+                reply = QMessageBox.question(
+                    self,
+                    "确认替换",
+                    "当前文档有内容，替换后无法撤销。是否继续？",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
+                if reply != QMessageBox.StandardButton.Yes:
+                    return
+            self._current_markdown = markdown
+            self.preview.set_content_from_markdown(markdown)
+            self._update_title()
+        elif mode == "append":
+            if self._current_markdown:
+                self._current_markdown += "\n\n" + markdown
+            else:
+                self._current_markdown = markdown
+            self.preview.set_content_from_markdown(self._current_markdown)
+            self._update_title()
 
     def closeEvent(self, event):
         if self._check_save():
