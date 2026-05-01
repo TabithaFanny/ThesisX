@@ -23,7 +23,7 @@ def ensure_agent_team_path(path: str) -> Path:
         FileNotFoundError: if path is empty or doesn't exist.
         NotADirectoryError: if path doesn't contain the expected package.
     """
-    if not path or not path.strip():
+    if not path or not path.strip() or path.strip() == "未选择":
         raise FileNotFoundError("Agent Team 路径为空，请先选择路径。")
     p = Path(path).expanduser().resolve()
     if not p.exists():
@@ -60,12 +60,12 @@ _agent_team_added = False
 
 
 def _add_agent_team_to_sys_path(agent_team_root: Path) -> None:
-    """Add agent team root to sys.path[0] if not already present, idempotently."""
+    """Append agent team root to sys.path if not already present, idempotently."""
     global _agent_team_added
     root_str = str(agent_team_root)
     if root_str in sys.path:
         return
-    sys.path.insert(0, root_str)
+    sys.path.append(root_str)
     _agent_team_added = True
     logger.debug("Added to sys.path: %s", root_str)
 
@@ -118,12 +118,23 @@ def import_agent_team_api(agent_team_root: Path) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def sync_api_keys(config: Any) -> dict[str, str]:
-    """Read API keys from environment (never logged).
+def sync_api_keys(config: Any = None) -> dict[str, str]:
+    """Read API keys from unified config when available, falling back to env.
+
+    Priority: config.get_agent_team_config() > environment variables.
 
     Returns:
         dict with api_key, base_url, model (values may be empty strings).
     """
+    if config and hasattr(config, "get_agent_team_config"):
+        cfg = config.get_agent_team_config()
+        return {
+            "api_key": cfg.get("api_key", ""),
+            "base_url": cfg.get("base_url", ""),
+            "model": cfg.get("model", ""),
+        }
+
+    # Legacy path: read directly from environment
     api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
         api_key = os.environ.get("AI_API_KEY", "")
@@ -163,7 +174,9 @@ def read_paper_markdown(session_dir: Path) -> str:
     Raises:
         FileNotFoundError: if paper.md doesn't exist.
     """
-    paper_path = session_dir / "paper.md"
+    paper_path = session_dir / "output" / "paper.md"
+    if not paper_path.exists():
+        paper_path = session_dir / "paper.md"
     if not paper_path.exists():
         raise FileNotFoundError(f"paper.md 未生成: {paper_path}")
     return paper_path.read_text(encoding="utf-8")

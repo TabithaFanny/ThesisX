@@ -1396,14 +1396,14 @@ class _ChartCard(QFrame):
         # Label
         name_label = QLabel(self._chart_def["label"])
         name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        name_label.setFont(QFont("Microsoft YaHei", 10, QFont.Weight.Bold))
+        name_label.setFont(QFont("PingFang SC", 10, QFont.Weight.Bold))
         name_label.setStyleSheet("color: #334155; background: transparent;")
         layout.addWidget(name_label)
 
         # Description
         desc_label = QLabel(self._chart_def["desc"])
         desc_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        desc_label.setFont(QFont("Microsoft YaHei", 8))
+        desc_label.setFont(QFont("PingFang SC", 8))
         desc_label.setStyleSheet("color: #94A3B8; background: transparent;")
         desc_label.setWordWrap(True)
         layout.addWidget(desc_label)
@@ -1480,14 +1480,14 @@ class ChartDialog(QDialog):
 
         # Header
         header = QLabel("选择数据图类型")
-        header.setFont(QFont("Microsoft YaHei", 15, QFont.Weight.Bold))
+        header.setFont(QFont("PingFang SC", 15, QFont.Weight.Bold))
         header.setStyleSheet("color: #1E293B; background: transparent;")
         layout.addWidget(header)
 
         subtitle = QLabel(
             "点击选择一种图表，然后点击「插入」将其添加到文档中。插入后可直接编辑数据。"
         )
-        subtitle.setFont(QFont("Microsoft YaHei", 9))
+        subtitle.setFont(QFont("PingFang SC", 9))
         subtitle.setStyleSheet("color: #64748B; background: transparent;")
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
@@ -1532,7 +1532,7 @@ class ChartDialog(QDialog):
 
         self._cancel_btn = QPushButton("取消")
         self._cancel_btn.setFixedSize(90, 36)
-        self._cancel_btn.setFont(QFont("Microsoft YaHei", 10))
+        self._cancel_btn.setFont(QFont("PingFang SC", 10))
         self._cancel_btn.setStyleSheet("""
             QPushButton {
                 background: #FFFFFF;
@@ -1551,7 +1551,7 @@ class ChartDialog(QDialog):
 
         self._insert_btn = QPushButton("插入图表")
         self._insert_btn.setFixedSize(110, 36)
-        self._insert_btn.setFont(QFont("Microsoft YaHei", 10, QFont.Weight.Bold))
+        self._insert_btn.setFont(QFont("PingFang SC", 10, QFont.Weight.Bold))
         self._insert_btn.setEnabled(False)
         self._insert_btn.setStyleSheet("""
             QPushButton {

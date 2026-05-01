@@ -185,6 +185,7 @@ class MainWindow(QMainWindow):
         self._autosave_status_timer.timeout.connect(lambda: self.status_bar.clear_autosave_status())
 
         self._init_ui()
+        self._enhance_editor_visuals()
         self._init_menubar()
         self._init_shortcuts()
         self._connect_signals()
@@ -224,11 +225,49 @@ class MainWindow(QMainWindow):
             return ""
 
     def _init_ui(self):
+        from PyQt6.QtWidgets import QStackedWidget
+
         central = QWidget()
         main_layout = QVBoxLayout(central)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         self.setCentralWidget(central)
+
+        # Top-level mode switch: 0 = Workspace, 1 = Editor
+        self._mode_stack = QStackedWidget()
+        main_layout.addWidget(self._mode_stack)
+
+        # --- Mode 0: Workspace ---
+        from app.ui.pages.workspace import Workspace
+        from app.ui.pages.workspace_home import WorkspaceHomePage
+        from app.ui.pages.ai_chat_page import AIChatPage
+        from app.ui.pages.literature import LiteraturePage
+        from app.ui.pages.data_charts import DataChartsPage
+        from app.ui.pages.skill_library import SkillLibraryPage
+        from app.ui.pages.version_history import VersionHistoryPage
+        from app.ui.pages.collaboration import CollaborationPage
+        from app.ui.pages.submission import SubmissionPage
+        from app.ui.pages.settings_page import SettingsCenterPage
+
+        self._workspace = Workspace()
+        self._workspace.add_page("home", WorkspaceHomePage())
+        self._workspace.add_page("ai_chat", AIChatPage())
+        self._workspace.add_page("literature", LiteraturePage())
+        self._workspace.add_page("data_charts", DataChartsPage())
+        self._workspace.add_page("skills", SkillLibraryPage())
+        self._workspace.add_page("versions", VersionHistoryPage())
+        self._workspace.add_page("collaboration", CollaborationPage())
+        self._workspace.add_page("submission", SubmissionPage())
+        self._workspace.add_page("settings", SettingsCenterPage())
+        self._workspace.open_editor.connect(self._switch_to_editor)
+        self._workspace.open_paper_draft.connect(self._show_agent_paper_dialog)
+        self._mode_stack.addWidget(self._workspace)
+
+        # --- Mode 1: Editor ---
+        self._editor_page = QWidget()
+        editor_layout = QVBoxLayout(self._editor_page)
+        editor_layout.setContentsMargins(0, 0, 0, 0)
+        editor_layout.setSpacing(0)
 
         self.toolbar = FormattingToolbar()
         self.addToolBar(self.toolbar)
@@ -242,11 +281,9 @@ class MainWindow(QMainWindow):
         self.outline = OutlineWidget()
         self._content_splitter.addWidget(self.outline)
 
-        # Single editable panel — no more left/right split
         self.preview = PreviewWidget()
         self._content_splitter.addWidget(self.preview)
 
-        # Plagiarism panel (right side, hidden by default)
         self.plagiarism_panel = PlagiarismPanel()
         self.plagiarism_panel.setVisible(False)
         self._content_splitter.addWidget(self.plagiarism_panel)
@@ -254,12 +291,209 @@ class MainWindow(QMainWindow):
         self._content_splitter.setSizes([180, 820, 0])
         self._content_splitter.setHandleWidth(1)
 
-        main_layout.addWidget(self._content_splitter)
+        editor_layout.addWidget(self._content_splitter)
+        self._mode_stack.addWidget(self._editor_page)
+
+        # Start in workspace mode
+        self._mode_stack.setCurrentIndex(0)
+        self._editor_mode = False
 
         self.status_bar = StatusBar()
         self.setStatusBar(self.status_bar)
 
         self.formatting = FormattingActions(self.preview)
+
+        # Hide toolbars initially (workspace mode)
+        self.toolbar.setVisible(False)
+        self.more_toolbar.setVisible(False)
+
+    def _enhance_editor_visuals(self):
+        """Add SVG-aligned visual structure around existing editor components.
+
+        Does NOT modify PreviewWidget, FormattingToolbar, MoreToolbar, or any
+        real editing functionality. Only adds outer visual wrappers.
+        """
+        from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+        from app.ui.design_tokens import Light as L, FontSize, Radius, Spacing
+
+        # --- 1. Document info bar (above content splitter) ---
+        doc_info = QFrame()
+        doc_info.setObjectName("editorDocInfoBar")
+        doc_info.setFixedHeight(36)
+        doc_info.setStyleSheet(
+            f"QFrame#editorDocInfoBar {{ "
+            f"background-color: {L.SURFACE_ALT}; "
+            f"border-bottom: 1px solid {L.BORDER_SUBTLE}; "
+            f"}}"
+        )
+        doc_info_layout = QHBoxLayout(doc_info)
+        doc_info_layout.setContentsMargins(Spacing.MD, 0, Spacing.MD, 0)
+        doc_info_layout.setSpacing(Spacing.MD)
+
+        brand = QLabel("ThesisX")
+        brand.setStyleSheet(
+            f"font-size: {FontSize.BODY}px; font-weight: 800; color: {L.PRIMARY};"
+        )
+        doc_info_layout.addWidget(brand)
+
+        doc_name = QLabel("论文初稿.docx")
+        doc_name.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_PRIMARY}; font-weight: 600; "
+            f"background-color: {L.PRIMARY_LIGHT}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.PILL}px; padding: 2px {Spacing.SM}px;"
+        )
+        doc_info_layout.addWidget(doc_name)
+
+        save_status = QLabel("已保存")
+        save_status.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.SUCCESS};"
+        )
+        doc_info_layout.addWidget(save_status)
+
+        doc_info_layout.addStretch()
+
+        # AI prompt hint in doc info bar
+        ai_hint = QLabel("AI 提示：此处可补充政策语境")
+        ai_hint.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.PRIMARY}; "
+            f"background-color: {L.PRIMARY_LIGHT}; border: 1px solid {L.PRIMARY_BORDER}; "
+            f"border-radius: {Radius.INPUT}px; padding: 2px {Spacing.SM}px;"
+        )
+        doc_info_layout.addWidget(ai_hint)
+
+        # Insert doc info bar above the content splitter
+        editor_layout = self._editor_page.layout()
+        editor_layout.insertWidget(0, doc_info)
+
+        # --- 2. Style the outline widget for SVG alignment ---
+        self.outline.setStyleSheet(
+            f"QTreeWidget {{ "
+            f"background-color: {L.SURFACE}; "
+            f"border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.PANEL}px; "
+            f"font-size: {FontSize.SECONDARY}px; "
+            f"}} "
+            f"QTreeWidget::item {{ "
+            f"padding: {Spacing.XS}px {Spacing.SM}px; "
+            f"border-radius: {Radius.INPUT}px; "
+            f"margin: 1px 2px; "
+            f"}} "
+            f"QTreeWidget::item:selected {{ "
+            f"background-color: {L.PRIMARY_LIGHT}; "
+            f"color: {L.PRIMARY}; "
+            f"font-weight: bold; "
+            f"}} "
+            f"QTreeWidget::item:hover {{ "
+            f"background-color: {L.SURFACE_ALT}; "
+            f"}} "
+            f"QHeaderView::section {{ "
+            f"background-color: {L.SURFACE_ALT}; "
+            f"border: none; "
+            f"border-bottom: 1px solid {L.BORDER_SUBTLE}; "
+            f"font-size: {FontSize.SECONDARY}px; "
+            f"font-weight: bold; "
+            f"color: {L.TEXT_PRIMARY}; "
+            f"padding: {Spacing.SM}px; "
+            f"}}"
+        )
+
+        # --- 3. Agent suggestions panel (right side, mock/preview) ---
+        self._agent_panel = QFrame()
+        self._agent_panel.setObjectName("editorAgentPanel")
+        self._agent_panel.setFixedWidth(220)
+        self._agent_panel.setStyleSheet(
+            f"QFrame#editorAgentPanel {{ "
+            f"background-color: {L.SURFACE}; "
+            f"border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.PANEL}px; "
+            f"}}"
+        )
+        agent_layout = QVBoxLayout(self._agent_panel)
+        agent_layout.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
+        agent_layout.setSpacing(Spacing.SM)
+
+        agent_title = QLabel("Agent 建议")
+        agent_title.setStyleSheet(
+            f"font-size: {FontSize.CARD_TITLE}px; font-weight: bold; color: {L.TEXT_PRIMARY};"
+        )
+        agent_layout.addWidget(agent_title)
+
+        # Preview badge
+        preview_badge = QLabel("仅预览")
+        preview_badge.setStyleSheet(
+            f"color: {L.WARNING}; font-size: {FontSize.MICRO}px; font-weight: bold; "
+            f"background-color: {L.WARNING_BG}; border: 1px solid {L.WARNING}; "
+            f"border-radius: {Radius.PILL}px; padding: 1px {Spacing.SM}px;"
+        )
+        preview_badge.setFixedWidth(60)
+        preview_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        agent_layout.addWidget(preview_badge)
+
+        # Mock suggestions
+        suggestions = [
+            ("文献补充", "建议引用王五 (2023) 关于数字化治理的定义。"),
+            ("逻辑审查", "第二节论点与第一节结论之间需要过渡。"),
+            ("数据提示", "此处缺少实证数据支撑，建议补充调查数据。"),
+        ]
+
+        for title, content in suggestions:
+            sug_frame = QFrame()
+            sug_frame.setStyleSheet(
+                f"QFrame {{ background-color: {L.PRIMARY_LIGHT}; "
+                f"border: 1px solid {L.PRIMARY_BORDER}; "
+                f"border-radius: {Radius.INPUT}px; }}"
+            )
+            sug_layout = QVBoxLayout(sug_frame)
+            sug_layout.setContentsMargins(Spacing.SM, Spacing.SM, Spacing.SM, Spacing.SM)
+            sug_layout.setSpacing(Spacing.XS)
+
+            sug_title = QLabel(title)
+            sug_title.setStyleSheet(
+                f"font-size: {FontSize.SECONDARY}px; font-weight: bold; color: {L.PRIMARY};"
+            )
+            sug_layout.addWidget(sug_title)
+
+            sug_content = QLabel(content)
+            sug_content.setWordWrap(True)
+            sug_content.setStyleSheet(
+                f"font-size: {FontSize.SMALL}px; color: {L.TEXT_SECONDARY};"
+            )
+            sug_layout.addWidget(sug_content)
+            agent_layout.addWidget(sug_frame)
+
+        # Drag-drop placeholder
+        drop_zone = QFrame()
+        drop_zone.setStyleSheet(
+            f"QFrame {{ background-color: {L.SURFACE_ALT}; "
+            f"border: 2px dashed {L.BORDER}; "
+            f"border-radius: {Radius.PANEL}px; }}"
+        )
+        drop_zone.setFixedHeight(80)
+        drop_layout = QVBoxLayout(drop_zone)
+        drop_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        drop_label = QLabel("拖拽图片/图表到这里")
+        drop_label.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED};"
+        )
+        drop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        drop_layout.addWidget(drop_label)
+        agent_layout.addWidget(drop_zone)
+
+        agent_layout.addStretch()
+
+        # Add agent panel to splitter (before plagiarism panel)
+        self._content_splitter.addWidget(self._agent_panel)
+
+        # Update splitter sizes: outline | preview | agent_panel | plagiarism_panel
+        self._content_splitter.setSizes([180, 620, 220, 0])
+
+        # Hide agent panel initially (workspace mode)
+        self._agent_panel.setVisible(False)
+
+        # --- 4. Enhance status bar with document name ---
+        self.status_bar.file_label.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_PRIMARY}; font-weight: bold;"
+        )
 
     def _init_menubar(self):
         menubar = self.menuBar()
@@ -520,6 +754,13 @@ class MainWindow(QMainWindow):
         self._dark_mode_action.triggered.connect(self._toggle_dark_mode)
         view_menu.addAction(self._dark_mode_action)
 
+        view_menu.addSeparator()
+
+        self._workspace_action = QAction("🏠 返回工作台", self)
+        self._workspace_action.setShortcut(QKeySequence("Ctrl+Shift+W"))
+        self._workspace_action.triggered.connect(self._switch_to_workspace)
+        view_menu.addAction(self._workspace_action)
+
         # Help menu
         help_menu = menubar.addMenu("帮助(&H)")
 
@@ -592,6 +833,7 @@ class MainWindow(QMainWindow):
         self.more_toolbar.line_height_changed.connect(self.formatting.set_line_height)
         self.more_toolbar.chart_clicked.connect(self.insert_chart)
         self.more_toolbar.formula_clicked.connect(self.insert_formula)
+        self.more_toolbar.agent_paper_clicked.connect(self._show_agent_paper_dialog)
 
         self.toolbar.font_color_changed.connect(self.formatting.set_font_color)
         self.toolbar.highlight_color_changed.connect(self.formatting.set_highlight_color)
@@ -3057,6 +3299,24 @@ class MainWindow(QMainWindow):
         }})();
         """
         self.preview.exec_js(js)
+
+    def _switch_to_editor(self):
+        """Switch from workspace mode to editor mode."""
+        self._mode_stack.setCurrentIndex(1)
+        self._editor_mode = True
+        self.toolbar.setVisible(True)
+        self.more_toolbar.setVisible(True)
+        if hasattr(self, "_agent_panel"):
+            self._agent_panel.setVisible(True)
+
+    def _switch_to_workspace(self):
+        """Switch from editor mode back to workspace mode."""
+        self._mode_stack.setCurrentIndex(0)
+        self._editor_mode = False
+        self.toolbar.setVisible(False)
+        self.more_toolbar.setVisible(False)
+        if hasattr(self, "_agent_panel"):
+            self._agent_panel.setVisible(False)
 
     def _show_agent_paper_dialog(self):
         """Open the AI paper draft assistant dialog."""

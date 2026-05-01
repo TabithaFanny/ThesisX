@@ -93,13 +93,13 @@ class AiInputBar(QWidget):
         layout.setSpacing(8)
 
         self._icon_label = QLabel("✦ AI")
-        self._icon_label.setFont(QFont("Microsoft YaHei", 10, QFont.Weight.Bold))
+        self._icon_label.setFont(QFont("PingFang SC", 10, QFont.Weight.Bold))
         self._icon_label.setFixedWidth(36)
         layout.addWidget(self._icon_label, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self._input = AiTextEdit()
         self._input.setPlaceholderText("输入 AI 指令，Enter 发送，Shift+Enter 换行，Esc 关闭")
-        self._input.setFont(QFont("Microsoft YaHei", 11))
+        self._input.setFont(QFont("PingFang SC", 11))
         self._input.submitted.connect(self._on_submit)
         self._input.textChanged.connect(self._adjust_height)
         layout.addWidget(self._input)

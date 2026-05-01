@@ -1,10 +1,13 @@
+from app.ui.design_tokens import FONT_FAMILY, FontSize
+
 APP_NAME = "ThesisX"
 APP_VERSION = "2.0.0"
 APP_DESCRIPTION = "学术论文撰写与表格处理工具"
 
-DEFAULT_FONT_FAMILY = "Microsoft YaHei"
-DEFAULT_FONT_SIZE = 11
-EDITOR_FONT_FAMILY = "Microsoft YaHei"
+# Extract primary font name from platform-aware stack (e.g., "PingFang SC")
+DEFAULT_FONT_FAMILY = FONT_FAMILY.split(",")[0].strip('" ')
+DEFAULT_FONT_SIZE = FontSize.BODY
+EDITOR_FONT_FAMILY = DEFAULT_FONT_FAMILY
 EDITOR_FONT_SIZE = 14
 
 PREVIEW_DEBOUNCE_MS = 300

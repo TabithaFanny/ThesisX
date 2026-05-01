@@ -392,7 +392,7 @@ class SkillsDialog(QDialog):
                 border: 1px solid {Colors.BORDER};
                 border-radius: 6px;
                 padding: 10px;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
                 font-size: 13px;
                 line-height: 1.5;
             }}

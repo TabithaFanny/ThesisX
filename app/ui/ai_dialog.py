@@ -65,7 +65,7 @@ class AiDialog(QDialog):
 
         # ── 标题 ──
         title = QLabel("✦ AI 写作助手")
-        title.setFont(QFont("Microsoft YaHei", 14, QFont.Weight.Bold))
+        title.setFont(QFont("PingFang SC", 14, QFont.Weight.Bold))
         title.setStyleSheet("color: #6C5CE7;")
         layout.addWidget(title)
 
@@ -95,7 +95,7 @@ class AiDialog(QDialog):
         # ── AI 输出区域 ──
         self._output = QTextEdit()
         self._output.setReadOnly(True)
-        self._output.setFont(QFont("Microsoft YaHei", 12))
+        self._output.setFont(QFont("PingFang SC", 12))
         self._output.setStyleSheet("""
             QTextEdit {
                 background-color: #fafafa;

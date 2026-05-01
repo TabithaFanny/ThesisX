@@ -225,7 +225,7 @@ class FormattingToolbar(QToolBar):
         self.font_family_combo.setCurrentIndex(2)  # 默认: 微软雅黑
         self.font_family_combo.activated.connect(
             lambda: self.font_family_changed.emit(
-                self.font_family_combo.currentData() or "Microsoft YaHei"
+                self.font_family_combo.currentData() or "PingFang SC"
             )
         )
         self.addWidget(self.font_family_combo)
@@ -507,6 +507,7 @@ class MoreToolbar(QToolBar):
     chart_clicked = pyqtSignal()
     formula_clicked = pyqtSignal()
     line_height_changed = pyqtSignal(str)  # 行距变更信号
+    agent_paper_clicked = pyqtSignal()
 
     ICON_SIZE = 20
 
@@ -534,6 +535,29 @@ class MoreToolbar(QToolBar):
 
     def _build(self):
         s = self.ICON_SIZE
+
+        # Agent Paper button — AI 论文初稿助手
+        self.btn_agent_paper = QPushButton()
+        self.btn_agent_paper.setText("📝 AI 论文初稿助手")
+        self.btn_agent_paper.setToolTip("AI 论文初稿助手")
+        self.btn_agent_paper.setFixedSize(140, 32)
+        self.btn_agent_paper.setStyleSheet("""
+            QPushButton {
+                background-color: #6366f1;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 12px;
+                font-size: 13px;
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #4f46e5; }
+            QPushButton:pressed { background-color: #4338ca; }
+        """)
+        self.btn_agent_paper.clicked.connect(self.agent_paper_clicked.emit)
+        self.addWidget(self.btn_agent_paper)
+
+        self.addSeparator()
 
         # Super/subscript
         self.btn_super = self._make_btn(

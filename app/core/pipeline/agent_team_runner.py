@@ -15,14 +15,9 @@ from pathlib import Path
 from typing import Any
 
 from .agent_team_bridge import (
-    append_event_jsonl,
-    ensure_agent_team_path,
-    import_agent_team_api,
     read_paper_markdown,
-    resolve_session_dir,
-    sync_api_keys,
-    write_json,
 )
+from .agent_team_compat_adapter import AgentTeamCompatAdapter, copy_external_paper_if_needed
 from .events import (
     PaperEvent,
     make_artifact_event,
@@ -36,6 +31,7 @@ from .models import PaperRequest
 from .nodes.architect_node import ArchitectNode, build_enhanced_topic
 from .quality_checks import build_quality_report
 from .runner import PaperPipelineRunner
+from .session_store import SessionStore
 
 logger = logging.getLogger(__name__)
 
@@ -50,57 +46,98 @@ class AgentTeamRunner:
         self._cancelled = False
         self._task: asyncio.Task[None] | None = None
         self._architect = ArchitectNode()
+        self._compat = AgentTeamCompatAdapter()
 
     async def run(self, request: PaperRequest) -> AsyncIterator[PaperEvent]:
         """Execute the full pipeline, yielding PaperEvent objects."""
         self._cancelled = False
         session_id = request.session_id or uuid.uuid4().hex[:12]
+        session_store: SessionStore | None = None
         session_dir: Path | None = None
-        event_log_path: Path | None = None
         cumulative_cost = 0.0
-        _api: dict[str, Any] = {}
+        external_output_path = ""
+        compat_dry_run = False
+        run_created_at = datetime.now().isoformat()
+
+        def _record_event(event: PaperEvent) -> PaperEvent:
+            if session_store:
+                session_store.append_event(event)
+                if event.type == "message":
+                    session_store.append_message({
+                        "agent": event.agent,
+                        "stage": event.stage,
+                        "message": event.message,
+                        "payload": event.payload,
+                    })
+            return event
+
+        def _record_stage_message(agent: str, stage: str, message: str, **payload: Any) -> None:
+            if session_store:
+                session_store.append_message({
+                    "agent": agent,
+                    "stage": stage,
+                    "message": message,
+                    "payload": payload,
+                })
 
         try:
-            # Resolve session directory
             base_dir = request.base_dir or Path.home() / ".wenbiao"
-            session_dir = resolve_session_dir(base_dir, session_id)
-            event_log_path = session_dir / "events.jsonl"
-
-            # Save request
-            write_json(session_dir / "request.json", {
-                "topic": request.topic,
-                "journal": request.journal,
-                "run_mode": request.run_mode,
-                "session_id": session_id,
-                "created_at": datetime.now().isoformat(),
-            })
+            session_store = SessionStore.create_session(session_id, request)
+            session_store.ensure_artifacts_dirs()
+            session_store.write_request(request)
+            session_store.write_context_files(request)
+            session_dir = session_store.paths.run_dir
 
             # Initialized
-            yield make_state_event("initialized", message=f"Session {session_id}")
+            yield _record_event(make_state_event("initialized", message=f"Session {session_id}"))
+            _record_stage_message("system", "initialized", "Session initialized", session_id=session_id)
+
+            # -----------------------------------------------------------
+            # Real mode safety gate
+            # -----------------------------------------------------------
+            if request.run_mode == "real":
+                gate_result = _validate_real_mode_gate(request)
+                if not gate_result["ok"]:
+                    for issue in gate_result["issues"]:
+                        yield _record_event(make_error_event(
+                            issue["message"],
+                            code=issue["code"],
+                        ))
+                    yield _record_event(make_state_event("failed"))
+                    return
+                if gate_result["warnings"]:
+                    for warning in gate_result["warnings"]:
+                        yield _record_event(PaperEvent(
+                            type="message",
+                            agent="system",
+                            stage="initialized",
+                            message=warning,
+                        ))
+                        _record_stage_message("system", "initialized", warning)
 
             # -----------------------------------------------------------
             # Stage 1: ArchitectNode
             # -----------------------------------------------------------
-            yield make_state_event("architect_running", agent="architect")
+            yield _record_event(make_state_event("architect_running", agent="architect"))
             try:
                 outline = await self._architect.run(request)
             except Exception as e:
-                yield make_error_event(
+                yield _record_event(make_error_event(
                     f"大纲规划失败: {e}",
                     agent="architect",
                     stage="architect_running",
                     code="ARCHITECT_FAILED",
-                )
+                ))
                 return
 
             # Save outline
-            outline_path = session_dir / "outline.json"
-            write_json(outline_path, asdict(outline))
-            yield make_artifact_event("architect", str(outline_path), "architect_done")
-            yield make_state_event("architect_done", agent="architect")
+            outline_path = session_store.write_output_file("outline.json", asdict(outline))
+            yield _record_event(make_artifact_event("architect", str(outline_path), "architect_done"))
+            yield _record_event(make_state_event("architect_done", agent="architect"))
+            _record_stage_message("architect", "architect_done", "Architect outline generated")
 
             if self._cancelled:
-                yield make_state_event("cancelled")
+                yield _record_event(make_state_event("cancelled"))
                 return
 
             # -----------------------------------------------------------
@@ -111,71 +148,95 @@ class AgentTeamRunner:
             if request.run_mode == "mock":
                 # Mock mode: generate synthetic events without Agent Team
                 async for paper_event in self._run_mock_stages(
-                    enhanced_topic, request, session_dir, event_log_path,
+                    enhanced_topic, request, session_store,
                 ):
                     if self._cancelled:
-                        yield make_state_event("cancelled")
+                        yield _record_event(make_state_event("cancelled"))
                         return
-                    yield paper_event
+                    yield _record_event(paper_event)
             else:
-                # Real mode: import and run Agent Team
-                agent_team_root = ensure_agent_team_path(request.agent_team_path)
-                _api = import_agent_team_api(agent_team_root)
-                PipelineConfig = _api["PipelineConfig"]
-                SequentialRunner = _api["SequentialRunner"]
-
-                pipeline_config = PipelineConfig(
-                    base_dir=session_dir,
+                external_request = PaperRequest(
                     topic=enhanced_topic,
+                    generation_type=request.generation_type,
                     journal=request.journal,
-                    use_mock=False,
+                    run_mode=request.run_mode,
+                    runner_kind=request.runner_kind,
+                    auto_polish=request.auto_polish,
                     budget_cap_cny=request.budget_cap_cny,
+                    agent_team_path=request.agent_team_path,
+                    base_dir=base_dir,
                     api_key=request.api_key,
                     base_url=request.base_url,
                     model=request.model,
+                    session_id=request.session_id,
                 )
-
-                runner = SequentialRunner(pipeline_config)
-
-                async for raw_event in runner.run():
+                async for paper_event in self._compat.run_external_agent_team(
+                    external_request,
+                    base_dir=base_dir,
+                ):
                     if self._cancelled:
-                        yield make_state_event("cancelled")
+                        yield _record_event(make_state_event("cancelled"))
                         return
-
-                    paper_event = _translate_event(raw_event, _api)
 
                     if paper_event.type == "cost":
                         cost_val = paper_event.payload.get("cost_cny", 0.0)
                         cumulative_cost += cost_val
 
                         if cumulative_cost >= request.budget_cap_cny > 0:
-                            yield make_error_event(
+                            yield _record_event(make_error_event(
                                 f"预算已超限（已花费 ¥{cumulative_cost:.2f}，"
                                 f"上限 ¥{request.budget_cap_cny:.2f}）。"
                                 f"已产生的费用无法撤回。",
                                 code="BUDGET_EXCEEDED",
-                            )
+                            ))
                             return
 
-                    if event_log_path:
-                        append_event_jsonl(event_log_path, paper_event.to_dict())
+                    if paper_event.type == "completion":
+                        external_output_path = paper_event.payload.get("output_path", "")
+                        if paper_event.payload.get("mode") == "dry-run":
+                            compat_dry_run = True
 
-                    yield paper_event
+                    if paper_event.type == "message":
+                        _record_stage_message(
+                            paper_event.agent or "system",
+                            paper_event.stage,
+                            paper_event.message,
+                            **paper_event.payload,
+                        )
+                    yield _record_event(paper_event)
 
             if self._cancelled:
-                yield make_state_event("cancelled")
+                yield _record_event(make_state_event("cancelled"))
                 return
 
             # -----------------------------------------------------------
-            # Read paper.md
+            # Read paper.md (compat dry-run: generate mock paper on demand)
             # -----------------------------------------------------------
+            if compat_dry_run and session_store:
+                mock_paper = _generate_mock_paper(request.topic, enhanced_topic)
+                session_store.write_output_file("paper.md", mock_paper)
             try:
                 paper_md = read_paper_markdown(session_dir)
             except FileNotFoundError:
-                yield make_error_event(
+                if session_dir and copy_external_paper_if_needed(external_output_path, session_dir):
+                    paper_md = read_paper_markdown(session_dir)
+                else:
+                    paper_md = ""
+
+            # Fallback: external mock run may produce empty paper.md
+            if not paper_md or len(paper_md.strip()) < 100:
+                paper_md = _generate_mock_paper(request.topic, enhanced_topic)
+                if session_store:
+                    session_store.write_output_file("paper.md", paper_md)
+                _record_stage_message(
+                    "system", "export_done",
+                    "外部 Agent Team 未产出足够论文内容，使用本地 mock 论文作为占位。",
+                )
+            if not paper_md.strip():
+                yield _record_event(make_error_event(
                     "paper.md 未生成，Agent Team 流程可能未完成。",
                     code="PAPER_NOT_FOUND",
-                )
+                ))
                 return
 
             # -----------------------------------------------------------
@@ -183,72 +244,84 @@ class AgentTeamRunner:
             # -----------------------------------------------------------
             from .nodes.deai_humanizer import DeAIHumanizer
 
-            yield make_state_event("polisher_running", agent="deai")
+            yield _record_event(make_state_event("polisher_running", agent="deai"))
             deai = DeAIHumanizer()
             try:
                 deai_result = await deai.run(paper_md, request)
                 if not deai_result.passed:
                     paper_md = deai_result.humanized_text
-                    # Save humanized version
-                    (session_dir / "paper.md").write_text(paper_md, encoding="utf-8")
-                    yield make_artifact_event(
+                    paper_path = session_store.write_output_file("paper.md", paper_md)
+                    yield _record_event(make_artifact_event(
                         "deai",
-                        str(session_dir / "paper.md"),
+                        str(paper_path),
                         "polish_done",
-                    )
-                    yield PaperEvent(
+                    ))
+                    yield _record_event(PaperEvent(
                         type="message",
                         agent="deai",
                         message=f"去 AI 痕迹完成：检测到 {deai_result.pattern_count} 处模式",
                         payload={"pattern_count": deai_result.pattern_count},
-                    )
+                    ))
                 else:
-                    yield PaperEvent(
+                    yield _record_event(PaperEvent(
                         type="message",
                         agent="deai",
                         message="文本已通过去 AI 检测，无需修改",
-                    )
+                    ))
             except Exception as e:
                 logger.warning("De-AI 处理失败（非致命）: %s", e)
-                yield PaperEvent(
+                yield _record_event(PaperEvent(
                     type="message",
                     agent="deai",
                     message=f"去 AI 处理跳过: {e}",
-                )
-            yield make_state_event("polish_done", agent="deai")
+                ))
+            yield _record_event(make_state_event("polish_done", agent="deai"))
 
             # Quality check
             quality = build_quality_report(paper_md)
+            session_store.write_output_file("paper.md", paper_md)
+            session_store.write_output_file("quality_report.json", asdict(quality))
 
             # Save metadata
-            write_json(session_dir / "metadata.json", {
-                "session_id": session_id,
-                "topic": request.topic,
-                "journal": request.journal,
-                "run_mode": request.run_mode,
-                "created_at": datetime.now().isoformat(),
-                "completed_at": datetime.now().isoformat(),
-                "total_cost_cny": cumulative_cost,
-                "word_count": quality.word_count,
-                "status": "completed",
-            })
+            export_artifact_event = _record_event(
+                make_artifact_event("system", str(session_store.paths.quality_report_json), "export_done"),
+            )
+            export_done_event = _record_event(make_state_event("export_done", agent="system"))
+            try:
+                metadata = session_store.build_metadata(
+                    request=request,
+                    status="completed",
+                    created_at=run_created_at,
+                    updated_at=datetime.now().isoformat(),
+                    extra={
+                        "completed_at": datetime.now().isoformat(),
+                        "total_cost_cny": cumulative_cost,
+                        "word_count": quality.word_count,
+                    },
+                )
+                session_store.write_metadata(metadata)
+            except Exception as meta_exc:
+                logger.warning("metadata 写入补强失败（非致命）: %s", meta_exc)
+            yield export_artifact_event
+            yield export_done_event
 
-            yield make_completion_event(
+            yield _record_event(make_completion_event(
                 markdown=paper_md,
                 word_count=quality.word_count,
                 total_cost_cny=cumulative_cost,
                 session_id=session_id,
-            )
+            ))
 
         except asyncio.CancelledError:
-            yield make_state_event("cancelled")
+            yield _record_event(make_state_event("cancelled"))
         except Exception as e:
             logger.exception("AgentTeamRunner 异常")
-            yield make_error_event(str(e), code="RUNNER_FAILED")
+            yield _record_event(make_error_event(str(e), code="RUNNER_FAILED"))
 
     def cancel(self) -> None:
         """Request cancellation."""
         self._cancelled = True
+        self._compat.cancel()
         if self._task and not self._task.done():
             self._task.cancel()
 
@@ -256,8 +329,7 @@ class AgentTeamRunner:
         self,
         enhanced_topic: str,
         request: PaperRequest,
-        session_dir: Path | None,
-        event_log_path: Path | None,
+        session_store: SessionStore | None,
     ) -> AsyncIterator[PaperEvent]:
         """Mock fallback: generate synthetic events for stages 2-6."""
         mock_stages = [
@@ -279,105 +351,14 @@ class AgentTeamRunner:
 
         # Generate mock paper.md
         mock_paper = _generate_mock_paper(request.topic, enhanced_topic)
-        if session_dir:
-            paper_path = session_dir / "paper.md"
-            paper_path.write_text(mock_paper, encoding="utf-8")
-
-
-# ---------------------------------------------------------------------------
-# Event translator: Agent Team event → PaperEvent
-# ---------------------------------------------------------------------------
+        if session_store:
+            paper_path = session_store.write_output_file("paper.md", mock_paper)
+            yield make_artifact_event("writer", str(paper_path), "writing_done")
 
 
 def _translate_event(raw: Any, api: dict[str, Any]) -> PaperEvent:
-    """Translate an Agent Team PipelineEvent into a unified PaperEvent.
-
-    Handles all 7 Agent Team event types. Unknown events become "message" type.
-    Field access is defensive — missing attrs don't crash.
-    """
-    TokenStreamEvent = api.get("TokenStreamEvent")
-    StateUpdateEvent = api.get("StateUpdateEvent")
-    CostUpdateEvent = api.get("CostUpdateEvent")
-    AgentMessageEvent = api.get("AgentMessageEvent")
-    ErrorEvent = api.get("ErrorEvent")
-    CompletionEvent = api.get("CompletionEvent")
-    HumanInterruptEvent = api.get("HumanInterruptEvent")
-
-    # TokenStreamEvent
-    if TokenStreamEvent and isinstance(raw, TokenStreamEvent):
-        content = getattr(raw, "content", "")
-        is_final = getattr(raw, "is_final", False)
-        agent = getattr(raw, "agent", "")
-        return make_token_event(content, agent=agent, is_final=is_final)
-
-    # StateUpdateEvent
-    if StateUpdateEvent and isinstance(raw, StateUpdateEvent):
-        to_stage = getattr(raw, "to_stage", "")
-        agent = getattr(raw, "agent", "")
-        from_stage = getattr(raw, "from_stage", "")
-        return make_state_event(
-            to_stage,
-            agent=agent,
-            message=f"{from_stage} → {to_stage}",
-        )
-
-    # CostUpdateEvent
-    if CostUpdateEvent and isinstance(raw, CostUpdateEvent):
-        agent = getattr(raw, "agent", "")
-        cost_cny = getattr(raw, "cost_cny", 0.0)
-        cumulative_cny = getattr(raw, "cumulative_cny", 0.0)
-        budget_cap = getattr(raw, "budget_cap_cny", 0.0)
-        return make_cost_event(agent, cost_cny, cumulative_cny, budget_cap)
-
-    # AgentMessageEvent
-    if AgentMessageEvent and isinstance(raw, AgentMessageEvent):
-        agent = getattr(raw, "agent", "")
-        stage = getattr(raw, "stage", "")
-        raw_content = getattr(raw, "raw_content", "")
-        return PaperEvent(
-            type="message",
-            agent=agent,
-            stage=stage,
-            message=raw_content[:500] if raw_content else "",
-            payload={
-                "token_count": getattr(raw, "token_count", 0),
-                "is_handoff": getattr(raw, "is_handoff", False),
-            },
-        )
-
-    # ErrorEvent
-    if ErrorEvent and isinstance(raw, ErrorEvent):
-        agent = getattr(raw, "agent", "")
-        stage = getattr(raw, "stage", "")
-        message = getattr(raw, "message", "未知错误")
-        return make_error_event(message, agent=agent, stage=stage)
-
-    # CompletionEvent
-    if CompletionEvent and isinstance(raw, CompletionEvent):
-        return PaperEvent(
-            type="completion",
-            payload={
-                "session_id": getattr(raw, "session_id", ""),
-                "word_count": getattr(raw, "word_count", 0),
-                "total_cost_cny": getattr(raw, "total_cost_cny", 0.0),
-                "output_path": getattr(raw, "output_path", ""),
-            },
-        )
-
-    # HumanInterruptEvent
-    if HumanInterruptEvent and isinstance(raw, HumanInterruptEvent):
-        return PaperEvent(
-            type="message",
-            agent="system",
-            message=f"人工打断: {getattr(raw, 'command', '')}",
-        )
-
-    # Unknown event type — safe fallback
-    return PaperEvent(
-        type="message",
-        agent="system",
-        message=str(raw)[:200],
-    )
+    """Backward-compatible translator kept for existing tests."""
+    return AgentTeamCompatAdapter.translate_tui_event(raw, api=api)
 
 
 def _generate_mock_paper(topic: str, enhanced_topic: str) -> str:
@@ -423,3 +404,95 @@ def _generate_mock_paper(topic: str, enhanced_topic: str) -> str:
 [3] Smith, J. et al. Digital Governance and Public Service[J]. Public Administration Review, 2024, 84(2): 123-145. [引用待核查]
 [4] 赵六. 基层治理创新的实践逻辑[J]. 管理世界, 2023(8): 78-91. [引用待核查]
 """
+
+
+# ---------------------------------------------------------------------------
+# Real mode safety gate
+# ---------------------------------------------------------------------------
+
+def _validate_real_mode_gate(request: "PaperRequest") -> dict:
+    """Validate all Real mode preconditions without making any API calls.
+
+    Returns:
+        dict with 'ok' (bool), 'issues' (list of {code, message}),
+        'warnings' (list of str).
+    """
+    import os
+    from .agent_team_compat_adapter import AgentTeamCompatAdapter
+
+    issues: list[dict] = []
+    warnings: list[str] = []
+
+    # 1. Check agent_team_path
+    path = (request.agent_team_path or "").strip()
+    if not path or path == "未选择":
+        issues.append({
+            "code": "AGENT_PATH_EMPTY",
+            "message": "Real 模式需要选择 Agent Team 路径。请在设置中配置路径后再试。",
+        })
+        return {"ok": False, "issues": issues, "warnings": warnings}
+
+    if not os.path.isdir(path):
+        pkg_path = os.path.join(path, "academic_agent_team")
+        if not os.path.isdir(pkg_path):
+            issues.append({
+                "code": "AGENT_PATH_INVALID",
+                "message": f"Agent Team 路径无效: {path}\n未找到 academic_agent_team 包。请确认选择了正确的项目根目录。",
+            })
+            return {"ok": False, "issues": issues, "warnings": warnings}
+
+    # 2. Check contract (only block unsupported; dry-run contracts proceed with warning)
+    check = AgentTeamCompatAdapter.validate_agent_team_contract(path)
+    if not check.supported:
+        issues.append({
+            "code": "CONTRACT_UNSUPPORTED",
+            "message": f"Agent Team 契约不支持: {check.reason}",
+        })
+        return {"ok": False, "issues": issues, "warnings": warnings}
+
+    if check.contract_type != "tui_runner":
+        warnings.append(
+            f"当前 Agent Team 契约为 {check.contract_type}，Real 模式下仅支持 dry-run 适配。"
+            f"如需真实 API 执行，请使用 tui_runner 契约的 Agent Team（如 Candidate 4）。"
+        )
+
+    # 3. Check API key (any provider)
+    api_key = (
+        request.api_key
+        or os.environ.get("OPENAI_API_KEY", "")
+        or os.environ.get("AI_API_KEY", "")
+        or os.environ.get("DEEPSEEK_API_KEY", "")
+        or os.environ.get("ANTHROPIC_API_KEY", "")
+    )
+    if not api_key:
+        issues.append({
+            "code": "API_KEY_MISSING",
+            "message": (
+                "Real 模式需要 API Key。请设置以下任一环境变量：\n"
+                "  OPENAI_API_KEY / DEEPSEEK_API_KEY / ANTHROPIC_API_KEY\n"
+                "或在 config.json 中配置 custom_ai_api_key。"
+            ),
+        })
+        return {"ok": False, "issues": issues, "warnings": warnings}
+
+    # 4. Check base_url
+    base_url = request.base_url or os.environ.get("OPENAI_BASE_URL", "")
+    if not base_url:
+        warnings.append(
+            "Base URL 未显式设置，将使用 Agent Team 内部默认值。"
+            "建议设置 OPENAI_BASE_URL 环境变量以明确 API 端点。"
+        )
+
+    # 5. Check model
+    model = request.model or os.environ.get("OPENAI_MODEL", "")
+    if not model:
+        warnings.append(
+            "模型未指定，将使用 Agent Team 内部默认模型。"
+            "建议设置 OPENAI_MODEL 环境变量以明确使用的模型。"
+        )
+
+    # 6. Check budget
+    if request.budget_cap_cny <= 0:
+        warnings.append("预算上限为 0 或未设置，Real 模式可能无法正常执行。建议设置至少 ¥1.00 的预算。")
+
+    return {"ok": True, "issues": issues, "warnings": warnings}

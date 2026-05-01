@@ -80,12 +80,12 @@ class _ModelCard(QWidget):
         text_col.setSpacing(3)
 
         name_label = QLabel(name)
-        name_label.setFont(QFont("Microsoft YaHei", 13, QFont.Weight.Bold))
+        name_label.setFont(QFont("PingFang SC", 13, QFont.Weight.Bold))
         name_label.setStyleSheet(f"color: #222; background: transparent;")
         text_col.addWidget(name_label)
 
         sub_label = QLabel(subtitle)
-        sub_label.setFont(QFont("Microsoft YaHei", 10))
+        sub_label.setFont(QFont("PingFang SC", 10))
         sub_label.setStyleSheet("color: #888; background: transparent;")
         text_col.addWidget(sub_label)
 
@@ -94,7 +94,7 @@ class _ModelCard(QWidget):
 
         # Check indicator (hidden by default)
         self._check = QLabel("✓")
-        self._check.setFont(QFont("Microsoft YaHei", 16, QFont.Weight.Bold))
+        self._check.setFont(QFont("PingFang SC", 16, QFont.Weight.Bold))
         self._check.setStyleSheet(f"color: {brand_color}; background: transparent;")
         self._check.setVisible(False)
         layout.addWidget(self._check)
@@ -182,7 +182,7 @@ class ModelSwitchDialog(QDialog):
         # Title row
         title_row = QHBoxLayout()
         title = QLabel("🔄 切换 AI 模型")
-        title.setFont(QFont("Microsoft YaHei", 15, QFont.Weight.Bold))
+        title.setFont(QFont("PingFang SC", 15, QFont.Weight.Bold))
         title.setStyleSheet("color: #1a1a1a;")
         title_row.addWidget(title)
         title_row.addStretch()
@@ -225,7 +225,7 @@ class ModelSwitchDialog(QDialog):
 
         # Subtitle
         subtitle = QLabel("选择一个模型用于 AI 写作助手")
-        subtitle.setFont(QFont("Microsoft YaHei", 10))
+        subtitle.setFont(QFont("PingFang SC", 10))
         subtitle.setStyleSheet("color: #999; margin-bottom: 8px;")
         main_layout.addWidget(subtitle)
 

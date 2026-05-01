@@ -347,7 +347,7 @@ class _FormulaCard(QFrame):
         layout.addWidget(preview_label)
 
         name_label = QLabel(name)
-        name_label.setFont(QFont("Microsoft YaHei", 9))
+        name_label.setFont(QFont("PingFang SC", 9))
         name_label.setStyleSheet("color: #888; background: transparent;")
         name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(name_label)
@@ -384,7 +384,7 @@ class FormulaDialog(QDialog):
         # 搜索框
         self._search = QLineEdit()
         self._search.setPlaceholderText("🔍 搜索公式...")
-        self._search.setFont(QFont("Microsoft YaHei", 11))
+        self._search.setFont(QFont("PingFang SC", 11))
         self._search.setStyleSheet("""
             QLineEdit {
                 border: 1px solid #ccc;
@@ -453,7 +453,7 @@ class FormulaDialog(QDialog):
 
         # 底部提示
         tip = QLabel("💡 点击公式即可插入文档。使用 $...$ 包裹行内公式，$$...$$ 包裹独立公式。")
-        tip.setFont(QFont("Microsoft YaHei", 9))
+        tip.setFont(QFont("PingFang SC", 9))
         tip.setStyleSheet("color: #999; padding: 4px 0;")
         layout.addWidget(tip)
 

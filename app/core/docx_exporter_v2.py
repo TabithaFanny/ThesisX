@@ -51,8 +51,8 @@ PRESETS: dict[str, dict] = {
     },
     "modern": {
         "label": "现代",
-        "font_body": "Microsoft YaHei",
-        "font_heading": "Microsoft YaHei",
+        "font_body": "PingFang SC",
+        "font_heading": "PingFang SC",
         "font_mono": "Cascadia Code",
         "size_body": 11,
         "size_h1": 20,
