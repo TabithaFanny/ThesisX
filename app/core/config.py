@@ -100,9 +100,10 @@ class Config:
             agent_team_path, api_key, base_url, model,
             default_journal, default_mode, default_budget_cny
         """
-        # API key: env OPENAI_API_KEY > env AI_API_KEY > config custom_ai_api_key
+        # API key: env DEEPSEEK_API_KEY > OPENAI_API_KEY > AI_API_KEY > config
         api_key = (
-            os.environ.get("OPENAI_API_KEY", "")
+            os.environ.get("DEEPSEEK_API_KEY", "")
+            or os.environ.get("OPENAI_API_KEY", "")
             or os.environ.get("AI_API_KEY", "")
             or self.get("custom_ai_api_key", "")
         )

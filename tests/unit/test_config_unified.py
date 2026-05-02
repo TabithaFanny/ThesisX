@@ -15,6 +15,7 @@ class TestAgentTeamConfig:
         monkeypatch.delenv("AI_API_KEY", raising=False)
         monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
         monkeypatch.delenv("OPENAI_MODEL", raising=False)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 
         # Override _data to simulate clean config
         config = Config()
@@ -42,6 +43,7 @@ class TestAgentTeamConfig:
         monkeypatch.setenv("OPENAI_API_KEY", "sk-env-key-1234")
         monkeypatch.setenv("OPENAI_BASE_URL", "https://custom.api.com/v1")
         monkeypatch.setenv("OPENAI_MODEL", "gpt-4o")
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 
         config = Config()
         config._data = {
@@ -59,6 +61,7 @@ class TestAgentTeamConfig:
     def test_ai_api_key_fallback(self, monkeypatch):
         """When OPENAI_API_KEY is not set, AI_API_KEY should be used."""
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
         monkeypatch.setenv("AI_API_KEY", "sk-ai-key-5678")
 
         config = Config()
@@ -76,6 +79,7 @@ class TestAgentTeamConfig:
         """OPENAI_API_KEY should take priority over AI_API_KEY."""
         monkeypatch.setenv("OPENAI_API_KEY", "sk-openai-priority")
         monkeypatch.setenv("AI_API_KEY", "sk-ai-fallback")
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 
         config = Config()
         config._data = {"custom_ai_api_key": ""}
@@ -91,6 +95,7 @@ class TestAgentTeamConfigHealth:
         monkeypatch.delenv("AI_API_KEY", raising=False)
         monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
         monkeypatch.delenv("OPENAI_MODEL", raising=False)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 
         config = Config()
         config._data = {
@@ -110,6 +115,7 @@ class TestAgentTeamConfigHealth:
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key")
         monkeypatch.setenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
         monkeypatch.setenv("OPENAI_MODEL", "gpt-4")
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 
         config = Config()
         config._data = {
@@ -132,6 +138,7 @@ class TestAgentTeamConfigHealth:
 
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
         monkeypatch.setenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 
         config = Config()
         config._data = {
@@ -152,6 +159,7 @@ class TestAgentTeamConfigHealth:
 
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
         monkeypatch.setenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 
         config = Config()
         config._data = {
