@@ -149,7 +149,11 @@ class ObsidianVaultScanner:
 
         if current_key is not None and current_val:
             val_str = " ".join(current_val)
-            if "," in val_str and not any(c in val_str for c in "{}[]"):
+            # Handle inline list: [item1, item2, item3]
+            if val_str.startswith("[") and val_str.endswith("]"):
+                inner = val_str[1:-1]
+                result[current_key] = [v.strip() for v in inner.split(",")]
+            elif "," in val_str and not any(c in val_str for c in "{}[]"):
                 result[current_key] = [v.strip() for v in val_str.split(",")]
             else:
                 result[current_key] = val_str.strip('" \' ')

@@ -142,9 +142,34 @@ class TheoryMatcher:
         self.theories = THEORY_LIBRARY
 
     def extract_keywords(self, text: str) -> list[str]:
-        """Extract significant keywords from research question."""
-        words = re.findall(r"\b[a-zA-Z\u4e00-\u9fff]{2,}\b", text.lower())
-        return [w for w in words if w not in self.STOPWORDS]
+        """Extract significant keywords from research question.
+
+        English: uses word boundaries (\b).
+        Chinese: splits into character n-grams (2-4 chars) that form meaningful units.
+        """
+        words: list[str] = []
+
+        # English word-boundary extraction
+        english_part = re.sub(r"[\u4e00-\u9fff]", "", text.lower())
+        english_words = re.findall(r"\b[a-zA-Z]{2,}\b", english_part)
+        words.extend(w for w in english_words if w not in self.STOPWORDS)
+
+        # Chinese character n-gram extraction (no word boundaries in Chinese text)
+        chinese_text = re.sub(r"[a-zA-Z0-9]", "", text)
+        for n in range(2, 5):  # 2, 3, 4 character grams
+            for i in range(len(chinese_text) - n + 1):
+                gram = chinese_text[i : i + n]
+                if gram not in self.STOPWORDS:
+                    words.append(gram)
+
+        # Deduplicate while preserving order
+        seen: set[str] = set()
+        result: list[str] = []
+        for w in words:
+            if w not in seen:
+                seen.add(w)
+                result.append(w)
+        return result
 
     def match(self, research_question: str, top_k: int = 5) -> list[TheoryCandidate]:
         """Match a research question to theories.
