@@ -248,17 +248,23 @@ class MainWindow(QMainWindow):
         from app.ui.pages.collaboration import CollaborationPage
         from app.ui.pages.submission import SubmissionPage
         from app.ui.pages.settings_page import SettingsCenterPage
+        from app.ui.pages.run_history_page import RunHistoryPage
+        from app.ui.pages.knowledge_base import KnowledgeBasePage
 
         self._workspace = Workspace()
         self._workspace.add_page("home", WorkspaceHomePage())
         self._workspace.add_page("ai_chat", AIChatPage())
         self._workspace.add_page("literature", LiteraturePage())
+        self._workspace.add_page("knowledge", KnowledgeBasePage())
         self._workspace.add_page("data_charts", DataChartsPage())
         self._workspace.add_page("skills", SkillLibraryPage())
         self._workspace.add_page("versions", VersionHistoryPage())
         self._workspace.add_page("collaboration", CollaborationPage())
         self._workspace.add_page("submission", SubmissionPage())
         self._workspace.add_page("settings", SettingsCenterPage())
+        run_history_page = RunHistoryPage()
+        self._workspace.add_page("run_history", run_history_page)
+        run_history_page.open_in_editor.connect(self._import_agent_paper)
         self._workspace.open_editor.connect(self._switch_to_editor)
         self._workspace.open_paper_draft.connect(self._show_agent_paper_dialog)
         self._mode_stack.addWidget(self._workspace)
