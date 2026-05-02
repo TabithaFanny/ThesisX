@@ -38,6 +38,9 @@ class PaperRequest:
     base_url: str = ""
     model: str = ""
     session_id: str | None = None
+    # Phase D wiring: optional paths to pre-built context files
+    knowledge_context_path: str = ""
+    theory_context_path: str = ""
 
 
 # ---------------------------------------------------------------------------

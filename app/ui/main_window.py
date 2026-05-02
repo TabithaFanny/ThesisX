@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import time
+from pathlib import Path
 
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QAction, QKeySequence
@@ -270,6 +271,18 @@ class MainWindow(QMainWindow):
         self._workspace.open_editor.connect(self._switch_to_editor)
         self._workspace.open_paper_draft.connect(self._show_agent_paper_dialog)
         self._mode_stack.addWidget(self._workspace)
+
+        # Phase D: store pre-built context paths for AgentTeamDialog
+        self._knowledge_context_path = ""
+        self._theory_context_path = ""
+
+        # Connect knowledge/theory selection signals for Phase D wiring
+        knowledge_page = self._workspace.page("knowledge")
+        theory_page = self._workspace.page("theory")
+        if knowledge_page:
+            knowledge_page.sources_selected.connect(self._on_knowledge_sources_selected)
+        if theory_page:
+            theory_page.theories_selected.connect(self._on_theories_selected)
 
         # --- Mode 1: Editor ---
         self._editor_page = QWidget()
@@ -3330,11 +3343,46 @@ class MainWindow(QMainWindow):
         """Open the AI paper draft assistant dialog."""
         from app.ui.agent_team_dialog import AgentTeamDialog
 
-        dialog = AgentTeamDialog(config=self.config, parent=self)
+        dialog = AgentTeamDialog(
+            config=self.config,
+            parent=self,
+            knowledge_context_path=self._knowledge_context_path,
+            theory_context_path=self._theory_context_path,
+        )
         dialog.paper_import_requested.connect(self._import_agent_paper)
         dialog.show()
         # Keep a reference to prevent garbage collection
         self._agent_dialog = dialog
+
+    def _on_knowledge_sources_selected(self, source_ids: list[str]) -> None:
+        """Phase D: build knowledge context file when user selects sources."""
+        if not source_ids:
+            return
+        try:
+            from app.core.knowledge import KnowledgeService
+            kb = KnowledgeService()
+            ctx_dir = Path.home() / ".wenbiao" / "runs" / "_context"
+            ctx_dir.mkdir(parents=True, exist_ok=True)
+            out_path = ctx_dir / "knowledge_context.md"
+            kb.export_chunks_as_context(source_ids, out_path)
+            self._knowledge_context_path = str(out_path)
+        except Exception:
+            pass
+
+    def _on_theories_selected(self, candidates: list) -> None:
+        """Phase D: build theory context file when user selects theories."""
+        if not candidates:
+            return
+        try:
+            from app.core.theory import TheoryMatcher
+            tm = TheoryMatcher()
+            ctx_dir = Path.home() / ".wenbiao" / "runs" / "_context"
+            ctx_dir.mkdir(parents=True, exist_ok=True)
+            out_path = ctx_dir / "theory_context.md"
+            tm.export_candidates_as_context(candidates, out_path)
+            self._theory_context_path = str(out_path)
+        except Exception:
+            pass
 
     def _import_agent_paper(self, markdown: str, mode: str = "new"):
         """Import generated paper into the editor."""

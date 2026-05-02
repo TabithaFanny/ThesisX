@@ -120,23 +120,43 @@ class SessionStore:
         except Exception:
             pass  # Fall back to placeholder above
 
-        # knowledge_context.md — populated when Knowledge Base is connected (Phase B)
-        self._write_text(
-            self.paths.knowledge_context_md,
-            "# Knowledge Context\n\n"
-            "- 当前未连接知识库。\n"
-            "- 用户未选择本次生成使用的资料范围。\n"
-            "- Phase B（知识库）接入后将填充本文件。\n"
-        )
+        # knowledge_context.md — populated from pre-built context file or Phase B default
+        if request.knowledge_context_path:
+            kp = Path(request.knowledge_context_path)
+            if kp.exists():
+                self._write_text(self.paths.knowledge_context_md, kp.read_text(encoding="utf-8"))
+            else:
+                self._write_text(
+                    self.paths.knowledge_context_md,
+                    "# Knowledge Context\n\n- Knowledge context file not found.\n",
+                )
+        else:
+            self._write_text(
+                self.paths.knowledge_context_md,
+                "# Knowledge Context\n\n"
+                "- 当前未连接知识库。\n"
+                "- 用户未选择本次生成使用的资料范围。\n"
+                "- Phase B（知识库）接入后将填充本文件。\n",
+            )
 
-        # theory_context.md — populated when Theory Matcher is connected (Phase B)
-        self._write_text(
-            self.paths.theory_context_md,
-            "# Theory Context\n\n"
-            "- 当前未连接理论匹配系统。\n"
-            "- 用户未选择本次生成使用的理论框架。\n"
-            "- Phase B（理论匹配）接入后将填充本文件。\n"
-        )
+        # theory_context.md — populated from pre-built context file or Phase B default
+        if request.theory_context_path:
+            tp = Path(request.theory_context_path)
+            if tp.exists():
+                self._write_text(self.paths.theory_context_md, tp.read_text(encoding="utf-8"))
+            else:
+                self._write_text(
+                    self.paths.theory_context_md,
+                    "# Theory Context\n\n- Theory context file not found.\n",
+                )
+        else:
+            self._write_text(
+                self.paths.theory_context_md,
+                "# Theory Context\n\n"
+                "- 当前未连接理论匹配系统。\n"
+                "- 用户未选择本次生成使用的理论框架。\n"
+                "- Phase B（理论匹配）接入后将填充本文件。\n",
+            )
 
     def append_event(self, event: PaperEvent | dict[str, Any]) -> None:
         payload = event.to_dict() if isinstance(event, PaperEvent) else dict(event)

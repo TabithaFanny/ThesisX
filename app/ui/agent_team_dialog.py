@@ -322,7 +322,8 @@ class AgentTeamDialog(QWidget):
 
     paper_import_requested = pyqtSignal(str, str)  # markdown, import_mode
 
-    def __init__(self, config: Config, parent: QWidget | None = None):
+    def __init__(self, config: Config, parent: QWidget | None = None,
+                 knowledge_context_path: str = "", theory_context_path: str = ""):
         super().__init__(parent)
         self._config = config
         self._worker: AgentTeamWorker | None = None
@@ -331,6 +332,8 @@ class AgentTeamDialog(QWidget):
         self._result_cost: float = 0.0
         self._log_line_count = 0
         self._max_log_lines = 500
+        self._knowledge_context_path = knowledge_context_path
+        self._theory_context_path = theory_context_path
 
         self.setWindowTitle("AI 论文初稿助手")
         self.setMinimumSize(860, 640)
@@ -982,6 +985,8 @@ class AgentTeamDialog(QWidget):
             api_key=api_key,
             base_url=base_url,
             model=model,
+            knowledge_context_path=self._knowledge_context_path,
+            theory_context_path=self._theory_context_path,
         )
 
     def _reset_progress(self) -> None:

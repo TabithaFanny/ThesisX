@@ -9,7 +9,7 @@ PRD Section 8: Theory Matcher Panel
 
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -35,6 +35,9 @@ def _truncate(text: str, max_len: int = 80) -> str:
 
 class TheoryMatcherPage(QWidget):
     """Theory Matcher — find the right theory for your research question."""
+
+    # Emitted when user selects theories to use in a paper run
+    theories_selected = pyqtSignal(list)
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -104,6 +107,20 @@ class TheoryMatcherPage(QWidget):
         )
         match_btn.clicked.connect(self._on_match)
         btn_row.addWidget(match_btn)
+
+        self._send_btn = QPushButton("发送给 AI 使用")
+        self._send_btn.setEnabled(False)
+        self._send_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.SURFACE_ALT}; color: {L.TEXT_SECONDARY}; "
+            f"border: 1px solid {L.BORDER}; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.LG}px; "
+            f"font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
+            f"QPushButton:enabled {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
+            f"border: none; }} "
+            f"QPushButton:enabled:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
+        )
+        self._send_btn.clicked.connect(self._on_send_to_ai)
+        btn_row.addWidget(self._send_btn)
         input_layout.addLayout(btn_row)
 
         # Keywords display
@@ -183,6 +200,20 @@ class TheoryMatcherPage(QWidget):
         for i, cand in enumerate(self._candidates):
             card = self._create_candidate_card(cand, i)
             self._results_area.addWidget(card)
+
+        self._send_btn.setEnabled(bool(self._candidates))
+
+    def _on_send_to_ai(self) -> None:
+        """Emit theories_selected signal with top candidates for paper generation."""
+        if not self._candidates:
+            return
+        self.theories_selected.emit(self._candidates[:3])
+        QMessageBox.information(
+            self,
+            "已选择",
+            "理论已选中，将在下次论文生成时注入上下文。\n"
+            "你也可以在 AI 论文助手中进一步调整。",
+        )
 
     def _create_candidate_card(self, cand: dict, index: int) -> QFrame:
         card = QFrame()

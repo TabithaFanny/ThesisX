@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 import re
 from dataclasses import dataclass
 
@@ -217,3 +218,19 @@ class TheoryMatcher:
 
         scored.sort(key=lambda x: x[1], reverse=True)
         return [c for c, _ in scored[:top_k]]
+
+    def export_candidates_as_context(
+        self, candidates: list[TheoryCandidate], output_path: str | Path
+    ) -> None:
+        """Write selected theory candidates as a Markdown context file."""
+        out = Path(output_path)
+        lines = ["# Theory Context\n"]
+        for c in candidates:
+            lines.append(f"\n## {c.name_zh} ({c.name_en})")
+            lines.append(f"\n**匹配度:** {c.match_score:.0%}")
+            lines.append(f"\n**学科:** {' · '.join(c.discipline[:3])}")
+            lines.append(f"\n**核心理论概念:** {' · '.join(c.core_concepts[:4])}")
+            lines.append(f"\n**适用话题:** {' · '.join(c.applicable_topics[:3])}")
+            lines.append(f"\n**理论解释:** {c.explanation}")
+            lines.append(f"\n**局限:** {'；'.join(c.limitations)}")
+        out.write_text("\n".join(lines), encoding="utf-8")

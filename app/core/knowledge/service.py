@@ -164,6 +164,26 @@ class KnowledgeService:
         path = self.sources_dir / f"{source.id}.json"
         path.write_text(json.dumps(source.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
 
+    def export_chunks_as_context(self, source_ids: list[str], output_path: str | Path) -> int:
+        """Export chunks from selected sources as a Markdown context file.
+
+        Returns the number of chunks written.
+        """
+        out = Path(output_path)
+        lines: list[str] = ["# Knowledge Context\n"]
+        total = 0
+        for sid in source_ids:
+            src = self.get_source(sid)
+            if not src:
+                continue
+            lines.append(f"\n## {src.title}\n")
+            for chunk in self.get_chunks(sid):
+                lines.append(f"\n### {chunk.heading or '片段'}\n")
+                lines.append(chunk.text)
+                total += 1
+        out.write_text("\n".join(lines), encoding="utf-8")
+        return total
+
     def _save_chunks(self, source_id: str, chunks: list[KnowledgeChunk]) -> None:
         path = self.chunks_dir / f"{source_id}.jsonl"
         lines = [json.dumps(c.to_dict(), ensure_ascii=False) for c in chunks]
