@@ -250,6 +250,7 @@ class MainWindow(QMainWindow):
         from app.ui.pages.settings_page import SettingsCenterPage
         from app.ui.pages.run_history_page import RunHistoryPage
         from app.ui.pages.knowledge_base import KnowledgeBasePage
+        from app.ui.pages.theory_matcher import TheoryMatcherPage
 
         self._workspace = Workspace()
         self._workspace.add_page("home", WorkspaceHomePage())
@@ -257,6 +258,7 @@ class MainWindow(QMainWindow):
         self._workspace.add_page("literature", LiteraturePage())
         self._workspace.add_page("knowledge", KnowledgeBasePage())
         self._workspace.add_page("data_charts", DataChartsPage())
+        self._workspace.add_page("theory", TheoryMatcherPage())
         self._workspace.add_page("skills", SkillLibraryPage())
         self._workspace.add_page("versions", VersionHistoryPage())
         self._workspace.add_page("collaboration", CollaborationPage())
