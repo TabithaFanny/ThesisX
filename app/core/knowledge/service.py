@@ -116,13 +116,29 @@ class KnowledgeService:
                 continue
         return chunks
 
+    def _extract_words(self, text: str) -> set[str]:
+        """Extract searchable words from mixed Chinese/English text.
+
+        English: word boundaries. Chinese: character n-grams (2-4 chars).
+        """
+        words: set[str] = set()
+        english_part = re.sub(r"[\u4e00-\u9fff]", "", text.lower())
+        english_words = re.findall(r"\b[a-zA-Z]{2,}\b", english_part)
+        words.update(english_words)
+
+        chinese_text = re.sub(r"[a-zA-Z0-9]", "", text)
+        for n in range(2, 5):
+            for i in range(len(chinese_text) - n + 1):
+                words.add(chinese_text[i : i + n])
+        return words
+
     def search(self, query: str, top_k: int = 10) -> list[tuple[KnowledgeChunk, float]]:
         """Simple keyword search across all chunks.
 
         Returns list of (chunk, score) sorted by relevance score descending.
         No embedding — just keyword overlap scoring.
         """
-        query_words = set(re.findall(r"\b\w{2,}\b", query.lower()))
+        query_words = self._extract_words(query)
         if not query_words:
             return []
 
@@ -138,7 +154,7 @@ class KnowledgeService:
                 except Exception:
                     continue
 
-                chunk_words = set(w.lower() for w in re.findall(r"\b\w{2,}\b", chunk.text))
+                chunk_words = self._extract_words(chunk.text)
                 overlap = len(query_words & chunk_words)
                 if overlap > 0:
                     score = overlap / (len(query_words) + len(chunk_words) - overlap)

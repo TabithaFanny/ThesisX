@@ -206,7 +206,7 @@ class SidebarNav(QWidget):
         )
         footer_layout.addWidget(footer_title)
 
-        footer_status = QLabel("Preview navigation for 10 pages")
+        footer_status = QLabel("13 个页面导航")
         footer_status.setStyleSheet(
             f"font-size: {FontSize.MICRO}px; color: {L.TEXT_MUTED};"
         )

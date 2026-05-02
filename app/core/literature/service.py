@@ -204,23 +204,38 @@ class LiteratureService:
             return True
         return False
 
+    def _extract_words(self, text: str) -> set[str]:
+        """Extract searchable words from mixed Chinese/English text.
+
+        English: word boundaries. Chinese: character n-grams (2-4 chars).
+        """
+        words: set[str] = set()
+        english_part = re.sub(r"[\u4e00-\u9fff]", "", text.lower())
+        english_words = re.findall(r"\b[a-zA-Z]{2,}\b", english_part)
+        words.update(english_words)
+
+        chinese_text = re.sub(r"[a-zA-Z0-9]", "", text)
+        for n in range(2, 5):
+            for i in range(len(chinese_text) - n + 1):
+                words.add(chinese_text[i : i + n])
+        return words
+
     def search_references(self, query: str) -> list[Reference]:
         """Full-text search across title, authors, abstract, and tags."""
-        query_words = set(re.findall(r"\b\w{2,}\b", query.lower()))
+        query_words = self._extract_words(query)
         if not query_words:
             return []
 
         results: list[tuple[Reference, int]] = []
         for ref in self.list_references():
-            # Score by overlap
             text_fields = " ".join([
                 ref.title,
                 " ".join(ref.authors),
                 ref.journal or "",
                 ref.abstract or "",
                 " ".join(ref.tags),
-            ]).lower()
-            field_words = set(re.findall(r"\b\w{2,}\b", text_fields))
+            ])
+            field_words = self._extract_words(text_fields)
             overlap = len(query_words & field_words)
             if overlap > 0:
                 results.append((ref, overlap))
