@@ -25,16 +25,27 @@ class KnowledgeService:
         self.sources_dir.mkdir(parents=True, exist_ok=True)
         self.chunks_dir.mkdir(parents=True, exist_ok=True)
 
+    # Maximum file size: 50 MB
+    MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024
+
     def import_file(self, file_path: str) -> KnowledgeSource:
         """Import a file into the Knowledge Base.
 
         Returns the created KnowledgeSource.
         Raises ValueError for unsupported file types.
         Raises FileNotFoundError if the file doesn't exist.
+        Raises ValueError if the file exceeds MAX_FILE_SIZE_BYTES.
         """
         path = Path(file_path).expanduser().resolve()
         if not path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
+
+        file_size = path.stat().st_size
+        if file_size > self.MAX_FILE_SIZE_BYTES:
+            raise ValueError(
+                f"File too large ({file_size / 1024 / 1024:.1f} MB). "
+                f"Maximum supported size is {self.MAX_FILE_SIZE_BYTES // (1024 * 1024)} MB."
+            )
 
         suffix = path.suffix.lower()
         source_type = {

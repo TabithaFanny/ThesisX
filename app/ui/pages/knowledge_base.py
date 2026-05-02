@@ -18,7 +18,7 @@ from __future__ import annotations
 import uuid
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtWidgets import (
     QCompleter,
     QDialog,
@@ -71,7 +71,8 @@ class KnowledgeBasePage(QWidget):
         self._active_source_id: str | None = None
         self._chunks: list = []
         self._init_ui()
-        self._load_sources()
+        # Defer loading to avoid blocking widget construction
+        QTimer.single_shot(0, self._load_sources)
 
     def _init_ui(self) -> None:
         self.setStyleSheet(f"background-color: {L.CANVAS};")
@@ -343,6 +344,9 @@ class KnowledgeBasePage(QWidget):
         self._import_file(path)
 
     def _import_file(self, path: str) -> None:
+        # Disable import button and show loading feedback
+        self._import_btn.setEnabled(False)
+        self._import_btn.setText("导入中...")
         try:
             from app.core.knowledge import KnowledgeService
 
@@ -370,6 +374,9 @@ class KnowledgeBasePage(QWidget):
                 "导入失败",
                 f"无法导入文件：{e}",
             )
+        finally:
+            self._import_btn.setEnabled(True)
+            self._import_btn.setText("+ 导入文件")
 
     def _on_source_selected(self, row: int) -> None:
         if row < 0:
