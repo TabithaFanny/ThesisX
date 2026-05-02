@@ -38,6 +38,8 @@ class SessionPaths:
     runtime_instructions_md: Path
     user_constraints_md: Path
     selected_skills_md: Path
+    knowledge_context_md: Path
+    theory_context_md: Path
 
 
 class SessionStore:
@@ -107,6 +109,33 @@ class SessionStore:
                 "- 本次运行未选择可执行技能列表。",
                 "- 该文件为后续 Runtime / CLI / Skill 接通预留。",
             ]),
+        )
+        # Try to load real skills from ~/.wenbiao/skills/
+        try:
+            from app.core.skills.loader import SkillLoader
+            loader = SkillLoader()
+            skills = loader.load_local_skills()
+            if skills:
+                self._write_text(self.paths.selected_skills_md, loader.render_selected_skills_md(skills))
+        except Exception:
+            pass  # Fall back to placeholder above
+
+        # knowledge_context.md — populated when Knowledge Base is connected (Phase B)
+        self._write_text(
+            self.paths.knowledge_context_md,
+            "# Knowledge Context\n\n"
+            "- 当前未连接知识库。\n"
+            "- 用户未选择本次生成使用的资料范围。\n"
+            "- Phase B（知识库）接入后将填充本文件。\n"
+        )
+
+        # theory_context.md — populated when Theory Matcher is connected (Phase B)
+        self._write_text(
+            self.paths.theory_context_md,
+            "# Theory Context\n\n"
+            "- 当前未连接理论匹配系统。\n"
+            "- 用户未选择本次生成使用的理论框架。\n"
+            "- Phase B（理论匹配）接入后将填充本文件。\n"
         )
 
     def append_event(self, event: PaperEvent | dict[str, Any]) -> None:
@@ -224,6 +253,8 @@ class SessionStore:
             runtime_instructions_md=context_dir / "runtime_instructions.md",
             user_constraints_md=context_dir / "user_constraints.md",
             selected_skills_md=context_dir / "selected_skills.md",
+            knowledge_context_md=context_dir / "knowledge_context.md",
+            theory_context_md=context_dir / "theory_context.md",
         )
 
     def _ensure_layout(self) -> None:

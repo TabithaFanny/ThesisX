@@ -9,7 +9,118 @@ from PyQt6.QtWidgets import (
 )
 
 from app.ui.design_tokens import Light as L, FontSize, Radius, Spacing
-from app.ui.components.base import PageHeader, SettingsSection, ComingSoonBadge, _card_style
+from app.ui.components.base import PageHeader, SettingsSection, ComingSoonBadge, StatusBadge, _card_style
+
+
+def _load_provider_health():
+    try:
+        from app.core.providers.detector import generate_provider_health_report
+        from app.core.config import Config
+        config = Config()
+        report = generate_provider_health_report()
+        team_config = config.get_agent_team_config()
+        return report, team_config
+    except Exception as e:
+        return None, {}
+
+
+def _provider_health_section() -> QFrame:
+    panel = QFrame()
+    panel.setStyleSheet(_card_style())
+    layout = QVBoxLayout(panel)
+    layout.setContentsMargins(Spacing.LG, Spacing.MD, Spacing.LG, Spacing.MD)
+    layout.setSpacing(Spacing.MD)
+
+    header = QLabel("Provider 健康状态")
+    header.setStyleSheet(
+        f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: bold;"
+    )
+    layout.addWidget(header)
+
+    report, team_config = _load_provider_health()
+
+    if report is None:
+        err = QLabel("无法加载 Provider 状态")
+        err.setStyleSheet(f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED};")
+        layout.addWidget(err)
+        return panel
+
+    # Overall status
+    overall_row = QHBoxLayout()
+    overall_row.setSpacing(Spacing.SM)
+    icon = "✓" if report.overall_ok else "✗"
+    color = L.SUCCESS if report.overall_ok else L.ERROR
+    icon_lbl = QLabel(icon)
+    icon_lbl.setStyleSheet(f"color: {color}; font-size: 16px; font-weight: bold;")
+    overall_row.addWidget(icon_lbl)
+    overall_lbl = QLabel("全部正常" if report.overall_ok else "存在问题")
+    overall_lbl.setStyleSheet(
+        f"font-size: {FontSize.BODY}px; color: {color}; font-weight: 600;"
+    )
+    overall_row.addWidget(overall_lbl)
+    overall_row.addStretch()
+    layout.addLayout(overall_row)
+
+    # Agent team path
+    agent_path = team_config.get("agent_team_path", "")
+    if agent_path:
+        path_row = QHBoxLayout()
+        path_lbl = QLabel("Agent Team 路径：")
+        path_lbl.setStyleSheet(f"font-size: {FontSize.BODY}px; color: {L.TEXT_SECONDARY};")
+        path_lbl.setFixedWidth(130)
+        path_row.addWidget(path_lbl)
+        path_val = QLabel(agent_path[:60])
+        path_val.setStyleSheet(
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; font-family: monospace;"
+        )
+        path_row.addWidget(path_val, 1)
+        layout.addLayout(path_row)
+
+    # Provider details
+    for section_title, items in [
+        ("本地 CLI", report.local_clis),
+        ("远程 API", report.remote_apis),
+        ("Agent Team", report.agent_teams),
+    ]:
+        section_lbl = QLabel(section_title)
+        section_lbl.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED}; font-weight: 600; "
+            f"margin-top: {Spacing.SM}px;"
+        )
+        layout.addWidget(section_lbl)
+
+        if not items:
+            empty = QLabel("  无")
+            empty.setStyleSheet(f"font-size: {FontSize.BODY}px; color: {L.TEXT_MUTED};")
+            layout.addWidget(empty)
+            continue
+
+        for h in items:
+            row = QHBoxLayout()
+            row.setSpacing(Spacing.SM)
+
+            icon2 = "✓" if h.ok else "✗"
+            color2 = L.SUCCESS if h.ok else L.ERROR
+            dot = QLabel(icon2)
+            dot.setStyleSheet(f"color: {color2}; font-size: 12px; font-weight: bold;")
+            row.addWidget(dot)
+
+            name = QLabel(h.provider_name)
+            name.setStyleSheet(
+                f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; font-weight: 600;"
+            )
+            row.addWidget(name, 1)
+
+            if h.warnings:
+                for w in h.warnings:
+                    warn = QLabel(f"⚠ {w}")
+                    warn.setStyleSheet(f"font-size: {FontSize.MICRO}px; color: {L.WARNING};")
+                    row.addWidget(warn)
+
+            layout.addLayout(row)
+
+    layout.addStretch()
+    return panel
 
 
 class SettingsCenterPage(QWidget):
@@ -33,6 +144,9 @@ class SettingsCenterPage(QWidget):
         layout.setSpacing(Spacing.LG)
 
         layout.addWidget(PageHeader("设置中心", "配置 API、模型、主题和外部连接器。"))
+
+        # Provider Health (real data)
+        layout.addWidget(_provider_health_section())
 
         # API Configuration
         api_section = SettingsSection("API 配置", [

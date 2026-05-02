@@ -18,9 +18,51 @@ from PyQt6.QtWidgets import (
 
 from app.ui.design_tokens import Light as L, FontSize, Radius, Spacing
 from app.ui.components.base import _card_style
-from app.ui.mock.workspace_data import (
-    MOCK_PROGRESS_CARDS, MOCK_RECENT_FILES, MOCK_TODO_ITEMS,
-)
+from app.ui.mock.workspace_data import MOCK_TODO_ITEMS
+
+
+class _HomeData:
+    """Lazy-loaded home page data."""
+
+    def __init__(self):
+        self._runs: list = []
+        self._health_summary: dict = {}
+        self._loaded = False
+
+    def load(self):
+        if self._loaded:
+            return
+        try:
+            from app.core.pipeline.run_history import RunHistoryReader
+            from app.core.providers.detector import generate_provider_health_report
+
+            reader = RunHistoryReader()
+            self._runs = reader.list_runs(limit=20)
+            report = generate_provider_health_report()
+            self._health_summary = {
+                "total": len(self._runs),
+                "completed": sum(1 for r in self._runs if r.status == "completed"),
+                "with_paper": sum(1 for r in self._runs if r.has_paper),
+                "mock": sum(1 for r in self._runs if r.run_mode == "mock"),
+                "real": sum(1 for r in self._runs if r.run_mode in ("real", "dry_run")),
+                "health_ok": report.overall_ok,
+            }
+        except Exception:
+            self._runs = []
+            self._health_summary = {"total": 0, "completed": 0, "with_paper": 0}
+        self._loaded = True
+
+    @property
+    def runs(self) -> list:
+        return self._runs
+
+    @property
+    def summary(self) -> dict:
+        return self._health_summary
+
+
+_data = _HomeData()
+
 
 
 class WorkspaceHomePage(QWidget):
@@ -29,6 +71,7 @@ class WorkspaceHomePage(QWidget):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setStyleSheet(f"background-color: {L.CANVAS};")
+        _data.load()
         self._init_ui()
 
     def _init_ui(self) -> None:
@@ -64,38 +107,62 @@ class WorkspaceHomePage(QWidget):
         search_row.addWidget(search_lbl)
         layout.addWidget(search_bar)
 
-        # --- Progress cards (SVG: 3 cards, each 140x76 with progress bar) ---
+        # --- Progress cards (real data from runs) ---
+        summary = _data.summary
+        cards = self._build_progress_cards(summary)
         grid = QGridLayout()
         grid.setSpacing(Spacing.MD)
-        for i, card_data in enumerate(MOCK_PROGRESS_CARDS):
-            card = self._create_progress_card(card_data["title"], card_data["percent"])
+        for i, card in enumerate(cards):
             grid.addWidget(card, 0, i)
         layout.addLayout(grid)
 
-        # --- Bottom section: Recent edits (left) + Todo (right) ---
+        # --- Bottom section: Recent runs (left) + Todo (right) ---
         bottom_row = QHBoxLayout()
         bottom_row.setSpacing(Spacing.MD)
 
-        # Left: Recent edits
+        # Left: Recent runs from history
         recent_card = QFrame()
         recent_card.setStyleSheet(_card_style())
         recent_layout = QVBoxLayout(recent_card)
         recent_layout.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
         recent_layout.setSpacing(Spacing.SM)
 
-        recent_title = QLabel("最近编辑")
+        recent_title = QLabel("最近运行")
         recent_title.setStyleSheet(
             f"font-size: {FontSize.CARD_TITLE}px; font-weight: bold; color: {L.TEXT_PRIMARY};"
         )
         recent_layout.addWidget(recent_title)
 
-        for f in MOCK_RECENT_FILES:
-            file_lbl = QLabel(f["name"])
-            file_lbl.setStyleSheet(
-                f"font-size: {FontSize.BODY}px; color: {L.TEXT_SECONDARY}; "
-                f"padding: {Spacing.XS}px 0;"
+        runs = _data.runs[:5]
+        if runs:
+            for run in runs:
+                run_row = QHBoxLayout()
+                run_row.setSpacing(Spacing.SM)
+                # Status dot
+                dot = QLabel("●")
+                color = L.SUCCESS if run.has_paper else L.WARNING
+                dot.setStyleSheet(f"color: {color}; font-size: {FontSize.BODY}px;")
+                run_row.addWidget(dot)
+                # Topic truncated
+                topic = (run.topic or "?")[:28]
+                topic_lbl = QLabel(topic)
+                topic_lbl.setStyleSheet(
+                    f"font-size: {FontSize.BODY}px; color: {L.TEXT_SECONDARY};"
+                )
+                run_row.addWidget(topic_lbl, 1)
+                # Mode badge
+                mode_lbl = QLabel(run.run_mode or "-")
+                mode_lbl.setStyleSheet(
+                    f"font-size: {FontSize.MICRO}px; color: {L.TEXT_MUTED};"
+                )
+                run_row.addWidget(mode_lbl)
+                recent_layout.addLayout(run_row)
+        else:
+            empty_lbl = QLabel("暂无运行记录")
+            empty_lbl.setStyleSheet(
+                f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED};"
             )
-            recent_layout.addWidget(file_lbl)
+            recent_layout.addWidget(empty_lbl)
         recent_layout.addStretch()
         bottom_row.addWidget(recent_card)
 
@@ -177,6 +244,24 @@ class WorkspaceHomePage(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.addWidget(scroll)
+
+    def _build_progress_cards(self, summary: dict) -> list[QFrame]:
+        total = summary.get("total", 0)
+        completed = summary.get("completed", 0)
+        with_paper = summary.get("with_paper", 0)
+        mock = summary.get("mock", 0)
+        real = summary.get("real", 0)
+
+        # Derive percentages: completed/total, papers/total, mock ratio
+        pct_complete = int(100 * completed / total) if total > 0 else 0
+        pct_paper = int(100 * with_paper / total) if total > 0 else 0
+        pct_mock = int(100 * mock / total) if total > 0 else 50
+
+        return [
+            self._create_progress_card("完成率", pct_complete),
+            self._create_progress_card("已生成论文", pct_paper),
+            self._create_progress_card("Mock / Real", pct_mock),
+        ]
 
     def _create_progress_card(self, title: str, percent: int) -> QFrame:
         """Create a progress card matching SVG: white card, title, progress bar."""

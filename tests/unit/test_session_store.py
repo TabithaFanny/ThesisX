@@ -66,7 +66,9 @@ class TestSessionStore:
         assert metadata["has_errors"] is False
         assert "outline_json" in metadata["output_files"]
 
-    def test_writes_context_markdown(self, tmp_path: Path):
+    def test_writes_context_markdown(self, tmp_path: Path, monkeypatch):
+        # Prevent loading real skills so we test the placeholder path
+        monkeypatch.setattr("app.core.skills.loader.SkillLoader.load_local_skills", lambda self: [])
         request = PaperRequest(
             topic="上下文测试",
             run_mode="mock",
