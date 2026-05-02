@@ -1,32 +1,46 @@
-"""Submission & Rebuttal page — SVG-aligned submission table and reply plan mock."""
+"""Submission & Rebuttal page — real SubmissionService + RebuttalService integration."""
 
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt
+import uuid
+from pathlib import Path
+
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
     QFrame,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
     QPushButton,
     QScrollArea,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
 from app.ui.components.base import ComingSoonBadge, PageHeader, PreviewBadge, StatusBadge, _card_style
 from app.ui.design_tokens import Light as L, FontSize, Radius, Spacing
-from app.ui.mock.pages_data import MOCK_REBUTTAL_DETAIL, MOCK_SUBMISSIONS, MOCK_SUBMISSION_STATS
 
 
 class SubmissionPage(QWidget):
-    """Submission tracking mock page with submission table and rebuttal plan sidebar."""
+    """Submission tracking page with real SubmissionService + RebuttalService."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet(f"background-color: {L.CANVAS};")
+        self._svc_path = str(Path.home() / ".wenbiao" / "runs" / "_submission_context")
+        self._current_sub_id: str | None = None
         self._init_ui()
+        self._load_records()
 
-    def _init_ui(self):
+    def _init_ui(self) -> None:
+        self.setStyleSheet(f"background-color: {L.CANVAS};")
+
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -39,8 +53,12 @@ class SubmissionPage(QWidget):
         layout.setSpacing(Spacing.LG)
 
         header_row = QHBoxLayout()
-        header_row.addWidget(PageHeader("投稿与回复", "展示 mock 投稿记录、审稿状态和 Rebuttal 计划；当前未接入真实投稿系统。"))
-        header_row.addWidget(ComingSoonBadge("V3 计划"))
+        header_row.addWidget(
+            PageHeader(
+                "投稿与回复",
+                "管理投稿记录，跟踪审稿状态，规划 rebuttal 回复计划。",
+            )
+        )
         header_row.addStretch()
         layout.addLayout(header_row)
 
@@ -63,29 +81,32 @@ class SubmissionPage(QWidget):
         row = QHBoxLayout()
         row.setSpacing(Spacing.MD)
 
-        for stat in MOCK_SUBMISSION_STATS:
+        self._stat_cards: list[tuple[QLabel, str]] = []
+
+        for label in ["草稿", "已投稿", "审稿中", "修改中", "已接受", "已拒绝"]:
             card = QFrame()
             card.setStyleSheet(_card_style())
-            card.setMinimumWidth(100)
-            layout = QVBoxLayout(card)
-            layout.setContentsMargins(Spacing.MD, Spacing.SM, Spacing.MD, Spacing.SM)
-            layout.setSpacing(Spacing.XS)
+            card.setMinimumWidth(80)
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(Spacing.MD, Spacing.SM, Spacing.MD, Spacing.SM)
+            card_layout.setSpacing(Spacing.XS)
 
-            count = QLabel(str(stat["count"]))
-            count.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            count.setStyleSheet(
+            count_lbl = QLabel("0")
+            count_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            count_lbl.setStyleSheet(
                 f"font-size: {FontSize.PANEL_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
             )
-            layout.addWidget(count)
+            card_layout.addWidget(count_lbl)
 
-            label = QLabel(stat["label"])
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            label.setStyleSheet(
+            lbl = QLabel(label)
+            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            lbl.setStyleSheet(
                 f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_SECONDARY};"
             )
-            layout.addWidget(label)
+            card_layout.addWidget(lbl)
 
             row.addWidget(card)
+            self._stat_cards.append((count_lbl, label.lower()))
 
         row.addStretch()
         return row
@@ -104,128 +125,30 @@ class SubmissionPage(QWidget):
         )
         top_row.addWidget(title)
         top_row.addStretch()
-        top_row.addWidget(PreviewBadge("仅预览"))
 
-        for text in ["新增投稿", "导出计划", "同步状态"]:
-            btn = QPushButton(text)
-            btn.setEnabled(False)
-            btn.setFixedHeight(28)
-            btn.setStyleSheet(
-                f"QPushButton {{ background-color: {L.SURFACE_ALT}; color: {L.TEXT_MUTED}; "
-                f"border: 1px solid {L.BORDER}; border-radius: {Radius.BUTTON}px; "
-                f"padding: 0 {Spacing.MD}px; font-size: {FontSize.SECONDARY}px; }} "
-                f"QPushButton:disabled {{ background-color: {L.SURFACE_ALT}; color: {L.TEXT_MUTED}; "
-                f"border: 1px dashed {L.BORDER}; }}"
-            )
-            top_row.addWidget(btn)
+        add_btn = QPushButton("新增投稿")
+        add_btn.setFixedHeight(28)
+        add_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
+            f"border: none; border-radius: {Radius.BUTTON}px; "
+            f"padding: 0 {Spacing.MD}px; font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
+            f"QPushButton:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
+        )
+        add_btn.clicked.connect(self._on_add_submission)
+        top_row.addWidget(add_btn)
+
         layout.addLayout(top_row)
 
-        hint = QLabel("当前表格仅用于 UI 预览，不接真实期刊/会议 API、邮件发送或状态同步。")
-        hint.setStyleSheet(
-            f"font-size: {FontSize.MICRO}px; color: {L.TEXT_MUTED};"
+        self._record_list = QListWidget()
+        self._record_list.setStyleSheet(
+            f"QListWidget {{ border: none; background-color: transparent; }}"
         )
-        layout.addWidget(hint)
-
-        layout.addWidget(self._table_row("会议/期刊", "论文标题", "状态", "投稿时间", "轮次", "操作", header=True))
-
-        for record in MOCK_SUBMISSIONS:
-            layout.addWidget(
-                self._table_row(
-                    record["journal"],
-                    record["paper"],
-                    record["status"],
-                    record["submitted"],
-                    record["round"],
-                    record["action"],
-                    status_type=record["status_type"],
-                )
-            )
+        self._record_list.itemClicked.connect(self._on_record_selected)
+        layout.addWidget(self._record_list)
 
         return panel
 
-    def _table_row(
-        self,
-        venue: str,
-        paper: str,
-        status: str,
-        submitted: str,
-        round_text: str,
-        action_text: str,
-        *,
-        header: bool = False,
-        status_type: str = "muted",
-    ) -> QFrame:
-        row = QFrame()
-        row.setStyleSheet(
-            f"QFrame {{ background-color: {'transparent' if header else L.SURFACE}; "
-            f"border-bottom: 1px solid {L.BORDER_SUBTLE}; }}"
-        )
-        layout = QHBoxLayout(row)
-        layout.setContentsMargins(Spacing.SM, Spacing.SM, Spacing.SM, Spacing.SM)
-        layout.setSpacing(Spacing.SM)
-
-        primary_color = L.TEXT_MUTED if header else L.TEXT_PRIMARY
-        secondary_color = L.TEXT_MUTED if header else L.TEXT_SECONDARY
-        weight = "600" if header else "400"
-
-        venue_lbl = QLabel(venue)
-        venue_lbl.setStyleSheet(
-            f"font-size: {FontSize.SMALL}px; color: {primary_color}; font-weight: {weight};"
-        )
-        layout.addWidget(venue_lbl, 2)
-
-        paper_lbl = QLabel(paper)
-        paper_lbl.setWordWrap(True)
-        paper_lbl.setStyleSheet(
-            f"font-size: {FontSize.SMALL}px; color: {primary_color}; font-weight: {weight};"
-        )
-        layout.addWidget(paper_lbl, 3)
-
-        if header:
-            status_lbl = QLabel(status)
-            status_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            status_lbl.setStyleSheet(
-                f"font-size: {FontSize.SMALL}px; color: {L.TEXT_MUTED}; font-weight: 600;"
-            )
-            layout.addWidget(status_lbl, 1)
-        else:
-            layout.addWidget(StatusBadge(status, status_type), 1)
-
-        submitted_lbl = QLabel(submitted)
-        submitted_lbl.setStyleSheet(
-            f"font-size: {FontSize.SMALL}px; color: {secondary_color}; font-weight: {weight};"
-        )
-        layout.addWidget(submitted_lbl, 1)
-
-        round_lbl = QLabel(round_text)
-        round_lbl.setStyleSheet(
-            f"font-size: {FontSize.SMALL}px; color: {secondary_color}; font-weight: {weight};"
-        )
-        layout.addWidget(round_lbl, 1)
-
-        if header:
-            action_lbl = QLabel(action_text)
-            action_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            action_lbl.setStyleSheet(
-                f"font-size: {FontSize.SMALL}px; color: {L.TEXT_MUTED}; font-weight: 600;"
-            )
-            layout.addWidget(action_lbl, 1)
-        else:
-            action_btn = QPushButton(action_text)
-            action_btn.setEnabled(False)
-            action_btn.setFixedHeight(24)
-            action_btn.setStyleSheet(
-                f"QPushButton {{ background-color: {L.SURFACE_ALT}; color: {L.TEXT_MUTED}; "
-                f"border: 1px dashed {L.BORDER}; border-radius: {Radius.BUTTON}px; "
-                f"font-size: {FontSize.MICRO}px; padding: 0 {Spacing.SM}px; }}"
-            )
-            layout.addWidget(action_btn, 1)
-
-        return row
-
     def _create_rebuttal_panel(self) -> QFrame:
-        detail = MOCK_REBUTTAL_DETAIL
-
         panel = QFrame()
         panel.setFixedWidth(280)
         panel.setStyleSheet(_card_style())
@@ -233,66 +156,164 @@ class SubmissionPage(QWidget):
         layout.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
         layout.setSpacing(Spacing.SM)
 
-        title = QLabel("审稿意见 / Rebuttal 计划")
+        title = QLabel("审稿意见 / Rebuttal")
         title.setStyleSheet(
             f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
         )
         layout.addWidget(title)
 
-        name = QLabel(detail["title"])
-        name.setWordWrap(True)
-        name.setStyleSheet(
-            f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
+        self._rebuttal_title = QLabel("选择一条投稿查看审稿意见")
+        self._rebuttal_title.setWordWrap(True)
+        self._rebuttal_title.setStyleSheet(
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_MUTED};"
         )
-        layout.addWidget(name)
+        layout.addWidget(self._rebuttal_title)
 
-        decision_row = QHBoxLayout()
-        decision_label = QLabel("审稿结论")
-        decision_label.setStyleSheet(
-            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_SECONDARY}; font-weight: 600;"
+        self._rebuttal_concerns = QTextEdit()
+        self._rebuttal_concerns.setPlaceholderText("粘贴审稿人意见文本...")
+        self._rebuttal_concerns.setFixedHeight(120)
+        self._rebuttal_concerns.setStyleSheet(
+            f"QTextEdit {{ background-color: {L.SURFACE}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.INPUT}px; padding: {Spacing.SM}px; "
+            f"font-size: {FontSize.SMALL}px; color: {L.TEXT_PRIMARY}; "
+            f"font-family: 'PingFang SC', sans-serif; }}"
         )
-        decision_row.addWidget(decision_label)
-        decision_row.addStretch()
-        decision_row.addWidget(StatusBadge(detail["decision"], detail["decision_type"]))
-        layout.addLayout(decision_row)
+        layout.addWidget(self._rebuttal_concerns)
 
-        layout.addWidget(self._detail_block("主要问题", detail["main_issues"]))
-        layout.addWidget(self._detail_block("回复计划", detail["response_plan"]))
-        layout.addWidget(self._detail_block("待补材料", detail["materials"]))
-        layout.addWidget(self._detail_block("风险提示", detail["risk_notes"], warning=True))
+        self._rebuttal_plan = QTextEdit()
+        self._rebuttal_plan.setReadOnly(True)
+        self._rebuttal_plan.setPlaceholderText("点击「生成回复计划」查看 AI 生成的回复提纲")
+        self._rebuttal_plan.setStyleSheet(
+            f"QTextEdit {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.INPUT}px; padding: {Spacing.SM}px; "
+            f"font-size: {FontSize.SMALL}px; color: {L.TEXT_PRIMARY}; "
+            f"font-family: 'PingFang SC', sans-serif; }}"
+        )
+        layout.addWidget(self._rebuttal_plan, 1)
 
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(Spacing.SM)
+
+        gen_btn = QPushButton("生成回复计划")
+        gen_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
+            f"border: none; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.SM}px; "
+            f"font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
+            f"QPushButton:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
+        )
+        gen_btn.clicked.connect(self._on_generate_rebuttal)
+        btn_row.addWidget(gen_btn)
+
+        export_btn = QPushButton("导出 Markdown")
+        export_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.SURFACE_ALT}; color: {L.TEXT_PRIMARY}; "
+            f"border: 1px solid {L.BORDER}; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.SM}px; "
+            f"font-size: {FontSize.SECONDARY}px; }} "
+            f"QPushButton:hover {{ background-color: {L.SURFACE}; }}"
+        )
+        export_btn.clicked.connect(self._on_export_rebuttal)
+        btn_row.addWidget(export_btn)
+
+        layout.addLayout(btn_row)
         layout.addStretch()
         return panel
 
-    def _detail_block(self, title: str, lines: list[str], warning: bool = False) -> QFrame:
-        panel = QFrame()
-        if warning:
-            panel.setStyleSheet(
-                f"QFrame {{ background-color: {L.WARNING_BG}; border: 1px solid {L.WARNING}; "
-                f"border-radius: {Radius.INPUT}px; }}"
-            )
-        else:
-            panel.setStyleSheet(
-                f"QFrame {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER_SUBTLE}; "
-                f"border-radius: {Radius.INPUT}px; }}"
-            )
+    def _load_records(self) -> None:
+        try:
+            from app.core.submission import SubmissionService
+            svc = SubmissionService()
+            records = svc.list_all()
+        except Exception:
+            records = []
 
-        layout = QVBoxLayout(panel)
-        layout.setContentsMargins(Spacing.SM, Spacing.SM, Spacing.SM, Spacing.SM)
-        layout.setSpacing(Spacing.XS)
+        self._record_list.clear()
+        for rec in records:
+            item = QListWidgetItem(
+                f"{rec.venue}  |  {rec.paper_title[:30]}  |  {rec.status}"
+            )
+            item.setData(Qt.ItemDataRole.UserRole, rec.id)
+            self._record_list.addItem(item)
 
-        header = QLabel(title)
-        header.setStyleSheet(
-            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_PRIMARY if not warning else L.WARNING}; font-weight: 700;"
+        self._update_stats(records)
+
+    def _update_stats(self, records: list) -> None:
+        counts: dict[str, int] = {
+            "草稿": 0, "已投稿": 0, "审稿中": 0,
+            "修改中": 0, "已接受": 0, "已拒绝": 0,
+        }
+        status_map = {
+            "draft": "草稿", "submitted": "已投稿", "under_review": "审稿中",
+            "revision": "修改中", "accepted": "已接受", "rejected": "已拒绝",
+        }
+        for rec in records:
+            key = status_map.get(rec.status, "草稿")
+            counts[key] = counts.get(key, 0) + 1
+
+        for lbl, key in self._stat_cards:
+            lbl.setText(str(counts.get(key, 0)))
+
+    def _on_add_submission(self) -> None:
+        title, ok1 = QInputDialog.getText(self, "新增投稿", "论文标题：")
+        if not ok1 or not title.strip():
+            return
+        venue, ok2 = QInputDialog.getText(self, "新增投稿", "期刊/会议：")
+        if not ok2 or not venue.strip():
+            return
+
+        try:
+            from app.core.submission import SubmissionService
+            svc = SubmissionService()
+            rec = svc.add(title.strip(), venue.strip())
+            self._load_records()
+            QMessageBox.information(self, "已添加", f"已创建投稿记录：{rec.id}")
+        except Exception as e:
+            QMessageBox.warning(self, "错误", f"添加失败：{e}")
+
+    def _on_record_selected(self, item: QListWidgetItem) -> None:
+        self._current_sub_id = item.data(Qt.ItemDataRole.UserRole)
+        self._rebuttal_title.setText(
+            item.text().split("|")[1].strip() if "|" in item.text() else "已选择投稿"
         )
-        layout.addWidget(header)
+        self._rebuttal_concerns.clear()
+        self._rebuttal_plan.clear()
 
-        for line in lines:
-            item = QLabel(f"• {line}")
-            item.setWordWrap(True)
-            item.setStyleSheet(
-                f"font-size: {FontSize.MICRO}px; color: {L.TEXT_SECONDARY};"
-            )
-            layout.addWidget(item)
+    def _on_generate_rebuttal(self) -> None:
+        if not self._current_sub_id:
+            QMessageBox.warning(self, "请选择", "请先在左侧列表选择一条投稿。")
+            return
 
-        return panel
+        reviewer_text = self._rebuttal_concerns.toPlainText().strip()
+        if not reviewer_text:
+            QMessageBox.warning(self, "请输入", "请先粘贴审稿人意见文本。")
+            return
+
+        try:
+            from app.core.submission import RebuttalService
+            svc = RebuttalService()
+            plan = svc.build_plan(self._current_sub_id, [reviewer_text])
+            self._rebuttal_plan.clear()
+            for i, (concern, response) in enumerate(zip(plan.concerns, plan.plans), 1):
+                self._rebuttal_plan.append(
+                    f"### {i}. {concern}\n\n{response}\n"
+                )
+        except Exception as e:
+            QMessageBox.warning(self, "错误", f"生成回复计划失败：{e}")
+
+    def _on_export_rebuttal(self) -> None:
+        plan_text = self._rebuttal_plan.toPlainText().strip()
+        if not plan_text:
+            QMessageBox.warning(self, "无可导出内容", "请先生成回复计划。")
+            return
+
+        sub_id = self._current_sub_id or "unknown"
+        out_dir = Path.home() / ".wenbiao" / "runs" / "_rebuttals"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"rebuttal_{sub_id}.md"
+        out_path.write_text(
+            f"# Rebuttal Plan — {sub_id}\n\n{plan_text}\n\n"
+            "---\n*由 ThesisX 自动生成*",
+            encoding="utf-8",
+        )
+        QMessageBox.information(self, "已导出", f"回复计划已保存至：\n{out_path}")
