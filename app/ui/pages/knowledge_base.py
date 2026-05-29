@@ -1,29 +1,27 @@
 """Knowledge Base page — personal academic knowledge management.
 
-Features (Phase B minimum):
-- Import files (txt/md/pdf/docx)
-- View source list with status
-- Keyword search across chunks
-- Preview chunks for selected source
-- Delete sources
+Features:
+- Import files (txt/md/pdf/docx) → parsed sources + chunks
+- Manual catalog items (literature/note/theory/evidence) → SQLite store
+- Type filtering, search, preview, delete
+- Batch Markdown/BibTeX import
 
- PRD mapping:
- - KnowledgeBasePage components: SourceImportPanel, SourceList,
-   SourceDetailPanel, ChunkPreviewPanel, SearchBox, SearchResultList
- - KnowledgeService: import_file, list_sources, search, get_chunks, delete_source
+PRD: PRD_KNOWLEDGE_BASE.md (Vision 3.1)
 """
 
 from __future__ import annotations
 
 import uuid
 from pathlib import Path
+from typing import Any
 
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtWidgets import (
-    QCompleter,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
+    QFormLayout,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -32,14 +30,13 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QPushButton,
     QScrollArea,
-    QSizePolicy,
     QTextEdit,
     QVBoxLayout,
     QWidget,
     QMessageBox,
 )
 
-from app.ui.design_tokens import Light as L, FontSize, Radius, Spacing
+from app.ui.design_tokens import get_theme, ThemeManager, FontSize, Radius, Spacing
 from app.ui.components.base import PageHeader, _card_style
 
 
@@ -67,35 +64,64 @@ class KnowledgeBasePage(QWidget):
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self._sources: list = []  # list of KnowledgeSource dicts
+        self._sources: list[dict[str, Any]] = []
+        self._items: list[dict[str, Any]] = []
         self._active_source_id: str | None = None
+        self._active_item_id: str | None = None
         self._chunks: list = []
+        self._mode: str = "sources"  # "sources" | "items"
+        self._store = None  # KnowledgeStore, lazy init
+        self._item_filter_type: str | None = None
         self._init_ui()
-        # Defer loading to avoid blocking widget construction
-        QTimer.single_shot(0, self._load_sources)
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
+        QTimer.singleShot(0, self._load_all)
 
     def _init_ui(self) -> None:
+        L = get_theme()
         self.setStyleSheet(f"background-color: {L.CANVAS};")
 
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(
+        self._scroll = QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._scroll.setStyleSheet(
             f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}"
         )
 
-        content = QWidget()
-        content.setStyleSheet(f"background-color: {L.CANVAS};")
-        root = QVBoxLayout(content)
+        self._content = QWidget()
+        self._content.setStyleSheet(f"background-color: {L.CANVAS};")
+        root = QVBoxLayout(self._content)
         root.setContentsMargins(Spacing.XL, Spacing.MD, Spacing.XL, Spacing.XL)
         root.setSpacing(Spacing.LG)
 
         # Header
-        header = PageHeader(
+        self._header = PageHeader(
             "知识库",
             "导入文献、笔记、PDF，构建个人学术资料库，支持检索和上下文注入。",
         )
-        root.addWidget(header)
+        root.addWidget(self._header)
+
+        # Mode switcher
+        mode_row = QHBoxLayout()
+        self._mode_label = QLabel("视图模式：")
+        self._mode_label.setStyleSheet(
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_SECONDARY};"
+        )
+        mode_row.addWidget(self._mode_label)
+        self._mode_combo = QComboBox()
+        self._mode_combo.addItem("📁 文件资料", "sources")
+        self._mode_combo.addItem("📋 目录条目", "items")
+        self._mode_combo.setStyleSheet(
+            f"QComboBox {{ background-color: {L.SURFACE}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.INPUT}px; padding: {Spacing.XS}px {Spacing.SM}px; "
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; min-width: 160px; }} "
+            f"QComboBox:hover {{ border-color: {L.PRIMARY}; }} "
+            f"QComboBox::drop-down {{ border: none; subcontrol-origin: padding; "
+            f"subcontrol-position: top right; width: 20px; }}"
+        )
+        self._mode_combo.currentIndexChanged.connect(self._on_mode_changed)
+        mode_row.addWidget(self._mode_combo)
+        mode_row.addStretch()
+        root.addLayout(mode_row)
 
         # Main 3-column layout
         cols = QHBoxLayout()
@@ -110,29 +136,30 @@ class KnowledgeBasePage(QWidget):
 
         root.addLayout(cols, 1)
 
-        scroll.setWidget(content)
+        self._scroll.setWidget(self._content)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(scroll)
+        layout.addWidget(self._scroll)
 
     def _create_source_panel(self) -> QFrame:
-        panel = QFrame()
-        panel.setFixedWidth(260)
-        panel.setStyleSheet(
+        L = get_theme()
+        self._source_panel = QFrame()
+        self._source_panel.setFixedWidth(260)
+        self._source_panel.setStyleSheet(
             f"QFrame {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER_SUBTLE}; "
             f"border-radius: {Radius.PANEL}px; }}"
         )
-        layout = QVBoxLayout(panel)
+        layout = QVBoxLayout(self._source_panel)
         layout.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
         layout.setSpacing(Spacing.SM)
 
         # Panel title
-        title = QLabel("资料库")
-        title.setStyleSheet(
+        self._src_title_label = QLabel("资料库")
+        self._src_title_label.setStyleSheet(
             f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
         )
-        layout.addWidget(title)
+        layout.addWidget(self._src_title_label)
 
         # Import button
         self._import_btn = QPushButton("+ 导入文件")
@@ -145,6 +172,53 @@ class KnowledgeBasePage(QWidget):
         )
         self._import_btn.clicked.connect(self._on_import_file)
         layout.addWidget(self._import_btn)
+
+        # --- Item mode: type filter + add button ---
+        self._item_controls = QWidget()
+        ic = QVBoxLayout(self._item_controls)
+        ic.setContentsMargins(0, 0, 0, 0)
+        ic.setSpacing(Spacing.SM)
+        # Type filter combo
+        type_row = QHBoxLayout()
+        type_row.setSpacing(Spacing.XS)
+        self._type_filter = QComboBox()
+        self._type_filter.addItem("全部类型", None)
+        self._type_filter.addItem("📄 文献", "literature")
+        self._type_filter.addItem("📝 笔记", "note")
+        self._type_filter.addItem("🔬 理论", "theory")
+        self._type_filter.addItem("📊 证据", "evidence")
+        self._type_filter.setStyleSheet(
+            f"QComboBox {{ background-color: {L.SURFACE}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.INPUT}px; padding: 2px 4px; "
+            f"font-size: {FontSize.SMALL}px; color: {L.TEXT_PRIMARY}; }}"
+        )
+        self._type_filter.currentIndexChanged.connect(self._on_item_type_changed)
+        type_row.addWidget(self._type_filter)
+        ic.addLayout(type_row)
+        # Add item button
+        self._add_item_btn = QPushButton("+ 添加条目")
+        self._add_item_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
+            f"border: none; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.MD}px; "
+            f"font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
+            f"QPushButton:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
+        )
+        self._add_item_btn.clicked.connect(self._on_add_item)
+        ic.addWidget(self._add_item_btn)
+        # Import BibTeX / Markdown batch
+        self._batch_import_btn = QPushButton("📥 批量导入 Markdown/BibTeX")
+        self._batch_import_btn.setStyleSheet(
+            f"QPushButton {{ background-color: transparent; color: {L.PRIMARY}; "
+            f"border: 1px solid {L.PRIMARY}; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.MD}px; "
+            f"font-size: {FontSize.SMALL}px; }} "
+            f"QPushButton:hover {{ background-color: {L.PRIMARY_LIGHT}; }}"
+        )
+        self._batch_import_btn.clicked.connect(self._on_batch_import)
+        ic.addWidget(self._batch_import_btn)
+        self._item_controls.setVisible(False)
+        layout.addWidget(self._item_controls)
 
         # Source list
         self._source_list = QListWidget()
@@ -159,6 +233,20 @@ class KnowledgeBasePage(QWidget):
         self._source_list.currentRowChanged.connect(self._on_source_selected)
         layout.addWidget(self._source_list, 1)
 
+        # Item list (separate, toggled by mode)
+        self._item_list = QListWidget()
+        self._item_list.setStyleSheet(
+            f"QListWidget {{ background-color: transparent; border: none; "
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_SECONDARY}; "
+            f"outline: none; }} "
+            f"QListWidget::item {{ padding: {Spacing.XS}px 0; }}"
+            f"QListWidget::item:selected {{ background-color: {L.PRIMARY_LIGHT}; "
+            f"color: {L.PRIMARY}; border-radius: {Radius.INPUT}px; }}"
+        )
+        self._item_list.currentRowChanged.connect(self._on_item_selected)
+        self._item_list.setVisible(False)
+        layout.addWidget(self._item_list, 1)
+
         # Empty state
         self._empty_label = QLabel("暂无资料\n\n导入 PDF、文档或笔记\n构建你的知识库")
         self._empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -167,6 +255,16 @@ class KnowledgeBasePage(QWidget):
             f"padding: {Spacing.MD}px;"
         )
         layout.addWidget(self._empty_label)
+
+        # Item empty state
+        self._item_empty_label = QLabel("暂无条目\n\n手动添加或批量导入\n文献、笔记、理论、证据")
+        self._item_empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._item_empty_label.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED}; "
+            f"padding: {Spacing.MD}px;"
+        )
+        self._item_empty_label.setVisible(False)
+        layout.addWidget(self._item_empty_label)
 
         # Delete button
         self._delete_btn = QPushButton("删除选中")
@@ -177,16 +275,17 @@ class KnowledgeBasePage(QWidget):
             f"font-size: {FontSize.SECONDARY}px; }} "
             f"QPushButton:hover {{ background-color: {L.ERROR_BG}; }}"
         )
-        self._delete_btn.clicked.connect(self._on_delete_source)
+        self._delete_btn.clicked.connect(self._on_delete)
         self._delete_btn.setEnabled(False)
         layout.addWidget(self._delete_btn)
 
-        return panel
+        return self._source_panel
 
     def _create_preview_panel(self) -> QFrame:
-        panel = QFrame()
-        panel.setStyleSheet(_card_style())
-        layout = QVBoxLayout(panel)
+        L = get_theme()
+        self._preview_panel = QFrame()
+        self._preview_panel.setStyleSheet(_card_style(L))
+        layout = QVBoxLayout(self._preview_panel)
         layout.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
         layout.setSpacing(Spacing.MD)
 
@@ -232,25 +331,26 @@ class KnowledgeBasePage(QWidget):
         self._use_in_run_btn.setEnabled(False)
         layout.addWidget(self._use_in_run_btn)
 
-        return panel
+        return self._preview_panel
 
     def _create_search_panel(self) -> QFrame:
-        panel = QFrame()
-        panel.setFixedWidth(280)
-        panel.setStyleSheet(
+        L = get_theme()
+        self._search_panel = QFrame()
+        self._search_panel.setFixedWidth(280)
+        self._search_panel.setStyleSheet(
             f"QFrame {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER_SUBTLE}; "
             f"border-radius: {Radius.PANEL}px; }}"
         )
-        layout = QVBoxLayout(panel)
+        layout = QVBoxLayout(self._search_panel)
         layout.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
         layout.setSpacing(Spacing.SM)
 
         # Search title
-        title = QLabel("全文检索")
-        title.setStyleSheet(
+        self._search_title_label = QLabel("全文检索")
+        self._search_title_label.setStyleSheet(
             f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
         )
-        layout.addWidget(title)
+        layout.addWidget(self._search_title_label)
 
         # Search input
         self._search_input = QLineEdit()
@@ -266,23 +366,23 @@ class KnowledgeBasePage(QWidget):
         layout.addWidget(self._search_input)
 
         # Search button
-        search_btn = QPushButton("检索")
-        search_btn.setStyleSheet(
+        self._search_btn = QPushButton("检索")
+        self._search_btn.setStyleSheet(
             f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
             f"border: none; border-radius: {Radius.BUTTON}px; "
             f"padding: {Spacing.XS}px {Spacing.MD}px; "
             f"font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
             f"QPushButton:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
         )
-        search_btn.clicked.connect(self._on_search)
-        layout.addWidget(search_btn)
+        self._search_btn.clicked.connect(self._on_search)
+        layout.addWidget(self._search_btn)
 
         # Results list
-        results_title = QLabel("检索结果")
-        results_title.setStyleSheet(
+        self._results_title_label = QLabel("检索结果")
+        self._results_title_label.setStyleSheet(
             f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
         )
-        layout.addWidget(results_title)
+        layout.addWidget(self._results_title_label)
 
         self._results_list = QTextEdit()
         self._results_list.setReadOnly(True)
@@ -294,23 +394,189 @@ class KnowledgeBasePage(QWidget):
         )
         layout.addWidget(self._results_list, 1)
 
-        return panel
+        return self._search_panel
+
+    # -------------------------------------------------------------------------
+    # Theme support
+    # -------------------------------------------------------------------------
+
+    def apply_theme(self) -> None:
+        L = get_theme()
+        self.setStyleSheet(f"background-color: {L.CANVAS};")
+        self._scroll.setStyleSheet(
+            f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}"
+        )
+        self._content.setStyleSheet(f"background-color: {L.CANVAS};")
+
+        # Header
+        self._header.apply_theme()
+
+        # Mode label + combo
+        self._mode_label.setStyleSheet(
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_SECONDARY};"
+        )
+        self._mode_combo.setStyleSheet(
+            f"QComboBox {{ background-color: {L.SURFACE}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.INPUT}px; padding: {Spacing.XS}px {Spacing.SM}px; "
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; min-width: 160px; }} "
+            f"QComboBox:hover {{ border-color: {L.PRIMARY}; }} "
+            f"QComboBox::drop-down {{ border: none; subcontrol-origin: padding; "
+            f"subcontrol-position: top right; width: 20px; }}"
+        )
+
+        # Source panel
+        self._source_panel.setStyleSheet(
+            f"QFrame {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.PANEL}px; }}"
+        )
+        self._src_title_label.setStyleSheet(
+            f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
+        )
+        self._import_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
+            f"border: none; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.MD}px; "
+            f"font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
+            f"QPushButton:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
+        )
+        self._type_filter.setStyleSheet(
+            f"QComboBox {{ background-color: {L.SURFACE}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.INPUT}px; padding: 2px 4px; "
+            f"font-size: {FontSize.SMALL}px; color: {L.TEXT_PRIMARY}; }}"
+        )
+        self._add_item_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
+            f"border: none; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.MD}px; "
+            f"font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
+            f"QPushButton:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
+        )
+        self._batch_import_btn.setStyleSheet(
+            f"QPushButton {{ background-color: transparent; color: {L.PRIMARY}; "
+            f"border: 1px solid {L.PRIMARY}; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.MD}px; "
+            f"font-size: {FontSize.SMALL}px; }} "
+            f"QPushButton:hover {{ background-color: {L.PRIMARY_LIGHT}; }}"
+        )
+        self._source_list.setStyleSheet(
+            f"QListWidget {{ background-color: transparent; border: none; "
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_SECONDARY}; "
+            f"outline: none; }} "
+            f"QListWidget::item {{ padding: {Spacing.XS}px 0; }}"
+            f"QListWidget::item:selected {{ background-color: {L.PRIMARY_LIGHT}; "
+            f"color: {L.PRIMARY}; border-radius: {Radius.INPUT}px; }}"
+        )
+        self._item_list.setStyleSheet(
+            f"QListWidget {{ background-color: transparent; border: none; "
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_SECONDARY}; "
+            f"outline: none; }} "
+            f"QListWidget::item {{ padding: {Spacing.XS}px 0; }}"
+            f"QListWidget::item:selected {{ background-color: {L.PRIMARY_LIGHT}; "
+            f"color: {L.PRIMARY}; border-radius: {Radius.INPUT}px; }}"
+        )
+        self._empty_label.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED}; "
+            f"padding: {Spacing.MD}px;"
+        )
+        self._item_empty_label.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED}; "
+            f"padding: {Spacing.MD}px;"
+        )
+        self._delete_btn.setStyleSheet(
+            f"QPushButton {{ background-color: transparent; color: {L.ERROR}; "
+            f"border: 1px solid {L.ERROR}; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.MD}px; "
+            f"font-size: {FontSize.SECONDARY}px; }} "
+            f"QPushButton:hover {{ background-color: {L.ERROR_BG}; }}"
+        )
+
+        # Preview panel
+        self._preview_panel.setStyleSheet(_card_style(L))
+        self._preview_title.setStyleSheet(
+            f"font-size: {FontSize.PANEL_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
+        )
+        self._chunk_count_lbl.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED};"
+        )
+        self._chunk_list.setStyleSheet(
+            f"QTextEdit {{ background-color: {L.SURFACE}; border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.INPUT}px; font-size: {FontSize.BODY}px; "
+            f"color: {L.TEXT_SECONDARY}; padding: {Spacing.SM}px; "
+            f"font-family: 'PingFang SC', sans-serif; }}"
+        )
+        self._use_in_run_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
+            f"border: none; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.MD}px; "
+            f"font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
+            f"QPushButton:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
+        )
+
+        # Search panel
+        self._search_panel.setStyleSheet(
+            f"QFrame {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.PANEL}px; }}"
+        )
+        self._search_title_label.setStyleSheet(
+            f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
+        )
+        self._search_input.setStyleSheet(
+            f"QLineEdit {{ background-color: {L.SURFACE}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.INPUT}px; padding: {Spacing.XS}px {Spacing.SM}px; "
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; }} "
+            f"QLineEdit:focus {{ border-color: {L.PRIMARY}; }} "
+            f"QLineEdit::placeholder {{ color: {L.TEXT_MUTED}; }}"
+        )
+        self._search_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
+            f"border: none; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.MD}px; "
+            f"font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
+            f"QPushButton:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
+        )
+        self._results_title_label.setStyleSheet(
+            f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
+        )
+        self._results_list.setStyleSheet(
+            f"QTextEdit {{ background-color: {L.SURFACE}; border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.INPUT}px; font-size: {FontSize.SECONDARY}px; "
+            f"color: {L.TEXT_SECONDARY}; padding: {Spacing.SM}px; }} "
+            f"font-family: 'PingFang SC', sans-serif;"
+        )
 
     # -------------------------------------------------------------------------
     # Data loading
     # -------------------------------------------------------------------------
 
+    def _get_store(self):
+        if self._store is None:
+            from app.core.knowledge.store import KnowledgeStore
+            self._store = KnowledgeStore()
+        return self._store
+
+    def _load_all(self) -> None:
+        self._load_sources()
+        self._load_items()
+
     def _load_sources(self) -> None:
         try:
             from app.core.knowledge import KnowledgeService
-
             svc = KnowledgeService()
             raw = svc.list_sources()
-            # list_sources returns list[dict]
             self._sources = [s if isinstance(s, dict) else s.to_dict() for s in raw]
-        except Exception as e:
+        except Exception:
             self._sources = []
         self._refresh_source_list()
+
+    def _load_items(self) -> None:
+        try:
+            store = self._get_store()
+            raw = store.list(item_type=self._item_filter_type)
+            self._items = [it.to_dict() for it in raw]
+        except Exception:
+            self._items = []
+        if self._mode == "items":
+            self._refresh_item_list()
 
     def _refresh_source_list(self) -> None:
         self._source_list.clear()
@@ -448,30 +714,57 @@ class KnowledgeBasePage(QWidget):
         if not query:
             return
         try:
-            from app.core.knowledge import KnowledgeService
-
-            svc = KnowledgeService()
-            raw_results = svc.search(query, top_k=10)
-            results = []
-            for item in raw_results:
-                if isinstance(item, tuple):
-                    chunk, score = item
-                    chunk_dict = chunk.to_dict() if hasattr(chunk, "to_dict") else chunk
-                else:
-                    chunk_dict = item
-                    score = None
-                heading = chunk_dict.get("heading") or "(无标题)"
-                text = chunk_dict.get("text", "")
-                preview = _truncate(text, 150)
-                score_str = f" (相关度 {score:.2f})" if score is not None else ""
-                results.append(f"## {heading}{score_str}\n{preview}\n")
-
-            if results:
-                self._results_list.setPlainText("\n".join(results))
+            if self._mode == "items":
+                self._search_items(query)
             else:
-                self._results_list.setPlainText("未找到相关片段。")
+                self._search_sources(query)
         except Exception as e:
             self._results_list.setPlainText(f"检索出错：{e}")
+
+    def _search_sources(self, query: str) -> None:
+        from app.core.knowledge import KnowledgeService
+
+        svc = KnowledgeService()
+        raw_results = svc.search(query, top_k=10)
+        results = []
+        for item in raw_results:
+            if isinstance(item, tuple):
+                chunk, score = item
+                chunk_dict = chunk.to_dict() if hasattr(chunk, "to_dict") else chunk
+            else:
+                chunk_dict = item
+                score = None
+            heading = chunk_dict.get("heading") or "(无标题)"
+            text = chunk_dict.get("text", "")
+            preview = _truncate(text, 150)
+            score_str = f" (相关度 {score:.2f})" if score is not None else ""
+            results.append(f"## {heading}{score_str}\n{preview}\n")
+
+        if results:
+            self._results_list.setPlainText("\n".join(results))
+        else:
+            self._results_list.setPlainText("未找到相关片段。")
+
+    def _search_items(self, query: str) -> None:
+        store = self._get_store()
+        raw = store.search(query, limit=10)
+        results = []
+        type_icons = {"literature": "📄", "note": "📝", "theory": "🔬", "evidence": "📊"}
+        for it in raw:
+            icon = type_icons.get(it.item_type, "📋")
+            title = it.title
+            tags = ", ".join(it.tags[:5]) if it.tags else ""
+            tag_str = f" [{tags}]" if tags else ""
+            content_preview = _truncate(it.content, 120) if it.content else "(无内容)"
+            results.append(
+                f"## {icon} {title}{tag_str}\n"
+                f"类型: {it.item_type} | 来源: {it.external_source}\n"
+                f"{content_preview}\n"
+            )
+        if results:
+            self._results_list.setPlainText("\n".join(results))
+        else:
+            self._results_list.setPlainText("未找到匹配的条目。")
 
     def _on_use_in_run(self) -> None:
         """Emit sources_selected signal for use in paper generation."""
@@ -484,3 +777,313 @@ class KnowledgeBasePage(QWidget):
             "资料已选中，将在下次论文生成时注入上下文。\n"
             "你也可以在 AI 论文助手中进一步选择范围。",
         )
+
+    # ── Mode switching ───────────────────────────────────────────────────
+
+    def _on_mode_changed(self, index: int) -> None:
+        mode = self._mode_combo.currentData()
+        if mode == self._mode:
+            return
+        self._mode = mode
+        is_items = mode == "items"
+
+        # Toggle visibility
+        self._source_list.setVisible(not is_items)
+        self._import_btn.setVisible(not is_items)
+        self._empty_label.setVisible(not is_items and not self._sources)
+        self._item_controls.setVisible(is_items)
+        self._item_list.setVisible(is_items)
+        self._item_empty_label.setVisible(is_items and not self._items)
+
+        # Clear selection
+        self._active_source_id = None
+        self._active_item_id = None
+        self._chunks = []
+        self._delete_btn.setEnabled(False)
+        self._use_in_run_btn.setEnabled(False)
+        self._preview_title.setText("选择一份资料查看")
+        self._chunk_count_lbl.setText("")
+        self._chunk_list.setPlainText("")
+        self._results_list.setPlainText("")
+
+        # Reload if needed
+        if is_items and not self._items:
+            self._load_items()
+
+    def _on_delete(self) -> None:
+        if self._mode == "items":
+            self._on_delete_item()
+        else:
+            self._on_delete_source()
+
+    # ── Item mode handlers ───────────────────────────────────────────────
+
+    def _on_item_type_changed(self, _index: int) -> None:
+        self._item_filter_type = self._type_filter.currentData()
+        self._load_items()
+
+    def _refresh_item_list(self) -> None:
+        self._item_list.clear()
+        has_items = False
+        type_icons = {"literature": "📄", "note": "📝", "theory": "🔬", "evidence": "📊"}
+        for item in self._items:
+            itype = item.get("item_type", "note")
+            icon = type_icons.get(itype, "📋")
+            title = item.get("title", "无标题")
+            tags = item.get("tags", [])
+            tag_str = f"  [{', '.join(tags[:3])}]" if tags else ""
+            list_item = QListWidgetItem(f"{icon} {title}{tag_str}")
+            list_item.setData(Qt.ItemDataRole.UserRole, item)
+            self._item_list.addItem(list_item)
+            has_items = True
+
+        self._item_empty_label.setVisible(not has_items)
+        self._item_list.setVisible(has_items)
+
+    def _on_item_selected(self, row: int) -> None:
+        if row < 0:
+            self._delete_btn.setEnabled(False)
+            self._use_in_run_btn.setEnabled(False)
+            self._active_item_id = None
+            self._preview_title.setText("选择一条目查看")
+            self._chunk_count_lbl.setText("")
+            self._chunk_list.setPlainText("")
+            return
+
+        item = self._item_list.item(row).data(Qt.ItemDataRole.UserRole)
+        self._active_item_id = item.get("id")
+        self._delete_btn.setEnabled(True)
+        self._use_in_run_btn.setEnabled(False)
+
+        title = item.get("title", "无标题")
+        itype = item.get("item_type", "")
+        type_icons = {"literature": "📄", "note": "📝", "theory": "🔬", "evidence": "📊"}
+        icon = type_icons.get(itype, "")
+        self._preview_title.setText(f"{icon} {title}")
+
+        lines = []
+        lines.append(f"类型: {itype}")
+        tags = item.get("tags", [])
+        if tags:
+            lines.append(f"标签: {', '.join(tags)}")
+        source = item.get("source_file", "")
+        if source:
+            lines.append(f"来源文件: {source}")
+        external = item.get("external_source", "")
+        if external and external != "manual":
+            lines.append(f"来源: {external}")
+        created = item.get("created_at", "")
+        if created:
+            lines.append(f"创建: {created[:16]}")
+        lines.append("")
+        content = item.get("content", "")
+        if content:
+            lines.append(content)
+        else:
+            lines.append("（无内容）")
+        self._chunk_list.setPlainText("\n".join(lines))
+        self._chunk_count_lbl.setText("")
+
+    def _on_add_item(self) -> None:
+        dialog = _AddItemDialog(self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        data = dialog.get_data()
+        try:
+            from app.core.knowledge.models import KnowledgeItem
+            store = self._get_store()
+            item = KnowledgeItem.create(
+                item_type=data["item_type"],
+                title=data["title"],
+                content=data["content"],
+                tags=data["tags"],
+                external_source="manual",
+            )
+            store.add(item)
+            item_dict = item.to_dict()
+            self._items.insert(0, item_dict)
+            if self._mode == "items":
+                self._refresh_item_list()
+                if self._item_list.count() > 0:
+                    self._item_list.setCurrentRow(0)
+        except Exception as e:
+            QMessageBox.warning(self, "添加失败", f"添加条目失败：{e}")
+
+    def _on_delete_item(self) -> None:
+        if not self._active_item_id:
+            return
+        reply = QMessageBox.question(
+            self,
+            "确认删除",
+            "删除后无法恢复。确定要删除这条目吗？",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            store = self._get_store()
+            store.delete(self._active_item_id)
+            self._items = [i for i in self._items if i.get("id") != self._active_item_id]
+            self._active_item_id = None
+            self._delete_btn.setEnabled(False)
+            self._preview_title.setText("选择一条目查看")
+            self._chunk_count_lbl.setText("")
+            self._chunk_list.setPlainText("")
+            self._refresh_item_list()
+        except Exception as e:
+            QMessageBox.warning(self, "删除失败", f"删除失败：{e}")
+
+    def _on_batch_import(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "批量导入 Markdown / BibTeX",
+            str(Path.home()),
+            "支持的文件 (*.md *.bib);;Markdown (*.md);;BibTeX (*.bib);;所有文件 (*.*)",
+        )
+        if not path:
+            return
+        filepath = Path(path)
+        try:
+            suffix = filepath.suffix.lower()
+            if suffix in (".md", ".markdown"):
+                from app.core.knowledge.importers import MarkdownImporter
+                parsed = MarkdownImporter.parse_file(filepath)
+            elif suffix == ".bib":
+                from app.core.knowledge.importers import BibTeXImporter
+                parsed = BibTeXImporter.parse_file(filepath)
+            else:
+                QMessageBox.warning(self, "格式不支持", f"不支持的文件格式：{filepath.suffix}")
+                return
+
+            if not parsed:
+                QMessageBox.information(self, "无内容", "文件中未找到可导入的内容。")
+                return
+
+            store = self._get_store()
+            count = 0
+            for item in parsed:
+                store.add(item)
+                self._items.insert(0, item.to_dict())
+                count += 1
+
+            QMessageBox.information(
+                self,
+                "导入完成",
+                f"成功导入 {count} 条记录。",
+            )
+            if self._mode == "items":
+                self._refresh_item_list()
+        except Exception as e:
+            QMessageBox.warning(self, "导入失败", f"批量导入出错：{e}")
+
+
+# ── Add Item Dialog ───────────────────────────────────────────────────────
+
+
+class _AddItemDialog(QDialog):
+    """Dialog for manually adding a knowledge catalog item."""
+
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+        L = get_theme()
+        self.setWindowTitle("添加知识条目")
+        self.setMinimumWidth(480)
+        self.setStyleSheet(
+            f"_AddItemDialog {{ background-color: {L.SURFACE}; }}"
+        )
+        self._init_ui()
+
+    def _init_ui(self) -> None:
+        L = get_theme()
+        layout = QVBoxLayout(self)
+        layout.setSpacing(Spacing.MD)
+        layout.setContentsMargins(Spacing.LG, Spacing.LG, Spacing.LG, Spacing.LG)
+
+        form = QFormLayout()
+        form.setSpacing(Spacing.SM)
+
+        # Item type
+        self._type_combo = QComboBox()
+        self._type_combo.addItem("📄 文献", "literature")
+        self._type_combo.addItem("📝 笔记", "note")
+        self._type_combo.addItem("🔬 理论", "theory")
+        self._type_combo.addItem("📊 证据", "evidence")
+        self._type_combo.setStyleSheet(
+            f"QComboBox {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.INPUT}px; padding: {Spacing.XS}px; "
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; }}"
+        )
+        type_label = QLabel("类型：")
+        type_label.setStyleSheet(f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY};")
+        form.addRow(type_label, self._type_combo)
+
+        # Title
+        self._title_input = QLineEdit()
+        self._title_input.setPlaceholderText("条目标题")
+        self._title_input.setStyleSheet(
+            f"QLineEdit {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.INPUT}px; padding: {Spacing.XS}px; "
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; }}"
+        )
+        title_label = QLabel("标题：")
+        title_label.setStyleSheet(f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY};")
+        form.addRow(title_label, self._title_input)
+
+        # Content
+        self._content_edit = QTextEdit()
+        self._content_edit.setPlaceholderText("内容（可选）")
+        self._content_edit.setMinimumHeight(120)
+        self._content_edit.setStyleSheet(
+            f"QTextEdit {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.INPUT}px; padding: {Spacing.XS}px; "
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; }}"
+        )
+        content_label = QLabel("内容：")
+        content_label.setStyleSheet(f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY};")
+        form.addRow(content_label, self._content_edit)
+
+        # Tags
+        self._tags_input = QLineEdit()
+        self._tags_input.setPlaceholderText("标签，用逗号分隔（可选）")
+        self._tags_input.setStyleSheet(
+            f"QLineEdit {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.INPUT}px; padding: {Spacing.XS}px; "
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; }}"
+        )
+        tags_label = QLabel("标签：")
+        tags_label.setStyleSheet(f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY};")
+        form.addRow(tags_label, self._tags_input)
+
+        layout.addLayout(form)
+
+        # Button box
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        button_box.setStyleSheet(
+            f"QPushButton {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.BUTTON}px; padding: {Spacing.XS}px {Spacing.MD}px; "
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; }} "
+            f"QPushButton:hover {{ border-color: {L.PRIMARY}; }}"
+        )
+        button_box.accepted.connect(self._on_accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+
+    def _on_accept(self) -> None:
+        title = self._title_input.text().strip()
+        if not title:
+            QMessageBox.warning(self, "缺少标题", "请填写条目标题。")
+            return
+        self.accept()
+
+    def get_data(self) -> dict:
+        tags_raw = self._tags_input.text().strip()
+        tags = [t.strip() for t in tags_raw.split(",") if t.strip()] if tags_raw else []
+        return {
+            "item_type": self._type_combo.currentData(),
+            "title": self._title_input.text().strip(),
+            "content": self._content_edit.toPlainText().strip(),
+            "tags": tags,
+        }

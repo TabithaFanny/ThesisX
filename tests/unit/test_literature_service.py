@@ -241,3 +241,65 @@ class TestReferenceModel:
         assert "王五" in formatted
         assert "2023" in formatted
         assert "J. of Testing" in formatted
+
+
+class TestCitationKey:
+    """Tests for citation key generation."""
+    ISOLATED = True
+
+    def test_basic_key(self):
+        ref = Reference.new(
+            title="Machine Learning Approaches",
+            authors=["Smith, John"],
+            year="2020",
+        )
+        key = LiteratureService.generate_citation_key(ref)
+        assert key == "smith2020mla"
+
+    def test_no_author_uses_unknown(self):
+        ref = Reference.new(title="A Paper", authors=[], year="2021")
+        key = LiteratureService.generate_citation_key(ref)
+        assert key.startswith("unknown")
+        assert "2021" in key
+
+    def test_no_year_uses_0000(self):
+        ref = Reference.new(title="Timeless Paper", authors=["Doe, Jane"])
+        key = LiteratureService.generate_citation_key(ref)
+        assert "0000" in key
+
+    def test_skips_stop_words_in_title(self):
+        ref = Reference.new(
+            title="The Study of the Effects of Climate Change",
+            authors=["Jones, Mary"],
+            year="2022",
+        )
+        key = LiteratureService.generate_citation_key(ref)
+        # "the" and "of" are stop words, so first initials from: study, effects, climate
+        assert key == "jones2022sec"
+
+    def test_chinese_author(self):
+        ref = Reference.new(title="人工智能研究", authors=["张三"], year="2024")
+        key = LiteratureService.generate_citation_key(ref)
+        assert key.startswith("张")
+        assert "2024" in key
+
+    def test_short_title(self):
+        ref = Reference.new(title="AI", authors=["Lee"], year="2019")
+        key = LiteratureService.generate_citation_key(ref)
+        # "AI" → meaningful=["ai"], initials="a"
+        assert key == "lee2019a"
+
+    def test_resolve_duplicate_key(self, tmp_path):
+        svc = LiteratureService(base_dir=tmp_path)
+        r1 = Reference.new(title="Machine Learning", authors=["Smith, John"], year="2020")
+        svc._save(r1)
+        key1 = svc.generate_citation_key(r1)
+        assert key1 == "smith2020ml"
+
+        r2 = Reference.new(title="Machine Learning", authors=["Smith, John"], year="2020")
+        svc._save(r2)
+        key2 = svc.generate_citation_key(r2)
+        assert key2 == "smith2020ml"
+
+        resolved = svc.resolve_duplicate_key(key2)
+        assert resolved == "smith2020mla"

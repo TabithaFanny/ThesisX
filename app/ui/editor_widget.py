@@ -28,7 +28,7 @@ from PyQt6.QtGui import (
     QTextDocument,
     QTextFormat,
 )
-from PyQt6.QtWidgets import QPlainTextEdit, QTextEdit
+from PyQt6.QtWidgets import QDialog, QPlainTextEdit, QTextEdit
 
 from app.constants import EDITOR_FONT_FAMILY, EDITOR_FONT_SIZE
 
@@ -228,6 +228,7 @@ class MarkdownHighlighter(QSyntaxHighlighter):
 
 class EditorWidget(QPlainTextEdit):
     content_changed = pyqtSignal()
+    rewrite_requested = pyqtSignal(str, str)  # (selected_text, mode)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -375,6 +376,56 @@ class EditorWidget(QPlainTextEdit):
             return True
 
         return False
+
+    # ------------------------------------------------------------------
+    # Context menu (local rewrite)
+    # ------------------------------------------------------------------
+
+    def contextMenuEvent(self, event):
+        from PyQt6.QtWidgets import QMenu
+        menu = self.createStandardContextMenu()
+        selected = self.textCursor().selectedText()
+        if selected:
+            rewrite_menu = menu.addMenu("局部改写")
+            for mode, label in [
+                ("polish", "润色"),
+                ("expand", "扩写"),
+                ("add_theory", "添加理论"),
+                ("add_evidence", "添加证据"),
+            ]:
+                action = rewrite_menu.addAction(label)
+                action.triggered.connect(
+                    lambda checked, m=mode: self._request_rewrite(m)
+                )
+        menu.exec(event.globalPos())
+
+    def _request_rewrite(self, mode: str) -> None:
+        """Execute a local rewrite and show diff preview."""
+        from app.core.editor.rewrite import RewriteService
+        from app.ui.diff_preview_dialog import DiffPreviewDialog
+
+        selected = self.textCursor().selectedText()
+        if not selected:
+            return
+
+        svc = RewriteService()
+        new_text, patch = svc.rewrite(selected, mode)
+
+        mode_labels = {
+            "polish": "润色",
+            "expand": "扩写",
+            "add_theory": "添加理论",
+            "add_evidence": "添加证据",
+        }
+
+        dialog = DiffPreviewDialog(selected, new_text, mode_labels.get(mode, mode))
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        # Apply replacement
+        cursor = self.textCursor()
+        cursor.insertText(new_text)
+        self.rewrite_requested.emit(selected, mode)
 
     # ------------------------------------------------------------------
     # Public helpers

@@ -26,6 +26,13 @@ _DEFAULTS = {
     "custom_ai_api_url": "",
     "custom_ai_model": "",
     "custom_ai_api_key": "",
+    # Custom image generation settings (kept separate from chat/completions)
+    "custom_image_api_url": "",
+    "custom_image_model": "",
+    "custom_image_api_key": "",
+    "custom_image_auth_header": "api-key",
+    "custom_image_size": "1024x1024",
+    "custom_image_quality": "auto",
     # Keyboard shortcut overrides: {"action_id": "key_sequence"}
     "shortcut_overrides": {},
     # Auto-recovery: max backup versions
@@ -132,6 +139,38 @@ class Config:
             "default_journal": self.get("agent_team_default_journal", "中文核心"),
             "default_mode": self.get("agent_team_default_mode", "mock"),
             "default_budget_cny": self.get("agent_team_default_budget_cny", 10.0),
+        }
+
+    def get_image_generation_config(self) -> dict:
+        """Return image generation configuration without affecting chat defaults.
+
+        Priority: environment variables > config.json > built-in defaults.
+        """
+        api_key = (
+            os.environ.get("AZURE_GPT_IMAGE_KEY", "")
+            or os.environ.get("OPENAI_IMAGE_API_KEY", "")
+            or self.get("custom_image_api_key", "")
+        )
+        api_url = (
+            os.environ.get("AZURE_GPT_IMAGE_ENDPOINT", "")
+            or os.environ.get("OPENAI_IMAGE_API_URL", "")
+            or self.get("custom_image_api_url", "")
+        )
+        model = (
+            os.environ.get("OPENAI_IMAGE_MODEL", "")
+            or self.get("custom_image_model", "")
+            or "gpt-image-2"
+        )
+        auth_header = self.get("custom_image_auth_header", "api-key") or "api-key"
+        size = self.get("custom_image_size", "1024x1024") or "1024x1024"
+        quality = self.get("custom_image_quality", "auto") or "auto"
+        return {
+            "api_key": api_key,
+            "api_url": api_url,
+            "model": model,
+            "auth_header": auth_header,
+            "size": size,
+            "quality": quality,
         }
 
     def get_agent_team_config_health(self) -> dict:

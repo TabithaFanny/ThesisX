@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 
-from .models import KnowledgeChunk, KnowledgeSource
+from .models import Claim, KnowledgeChunk, KnowledgeSource
 from .parser import parse_file
 
 
@@ -19,11 +19,13 @@ class KnowledgeService:
         self.kb_dir = Path(base_dir or self.KB_DIR).expanduser()
         self.sources_dir = self.kb_dir / "sources"
         self.chunks_dir = self.kb_dir / "chunks"
+        self.claims_dir = self.kb_dir / "claims"
         self._ensure_dirs()
 
     def _ensure_dirs(self) -> None:
         self.sources_dir.mkdir(parents=True, exist_ok=True)
         self.chunks_dir.mkdir(parents=True, exist_ok=True)
+        self.claims_dir.mkdir(parents=True, exist_ok=True)
 
     # Maximum file size: 50 MB
     MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024
@@ -203,4 +205,61 @@ class KnowledgeService:
     def _save_chunks(self, source_id: str, chunks: list[KnowledgeChunk]) -> None:
         path = self.chunks_dir / f"{source_id}.jsonl"
         lines = [json.dumps(c.to_dict(), ensure_ascii=False) for c in chunks]
+        path.write_text("\n".join(lines), encoding="utf-8")
+
+    # ── Claim extraction (Vision 3.3 Theory Matcher) ──────────────────────
+
+    def extract_claims(
+        self,
+        source_id: str,
+        claim_type: str = "fact",
+        min_length: int = 20,
+    ) -> list[Claim]:
+        """Extract claims from all chunks of a source.
+
+        Simple rule-based extraction: sentences longer than min_length
+        that contain factual indicators (实验表明、结果显示、研究发现).
+        """
+        factual_patterns = [
+            "表明", "显示", "发现", "证实", "证明",
+            "结果显示", "实验表明", "研究发现",
+            "表明了", "证明了",
+        ]
+        claims: list[Claim] = []
+        for chunk in self.get_chunks(source_id):
+            sentences = re.split(r"[。；！？\n]", chunk.text)
+            for sent in sentences:
+                sent = sent.strip()
+                if len(sent) < min_length:
+                    continue
+                if any(pat in sent for pat in factual_patterns):
+                    claim = Claim.new(
+                        source_id=source_id,
+                        chunk_id=chunk.id,
+                        claim_text=sent,
+                        claim_type=claim_type,
+                    )
+                    claims.append(claim)
+        if claims:
+            self._save_claims(source_id, claims)
+        return claims
+
+    def list_claims(self, source_id: str) -> list[Claim]:
+        path = self.claims_dir / f"{source_id}.jsonl"
+        if not path.exists():
+            return []
+        claims: list[Claim] = []
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                claims.append(Claim.from_dict(json.loads(line)))
+            except Exception:
+                continue
+        return claims
+
+    def _save_claims(self, source_id: str, claims: list[Claim]) -> None:
+        path = self.claims_dir / f"{source_id}.jsonl"
+        lines = [json.dumps(c.to_dict(), ensure_ascii=False) for c in claims]
         path.write_text("\n".join(lines), encoding="utf-8")

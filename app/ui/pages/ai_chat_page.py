@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
     QHBoxLayout, QLabel, QVBoxLayout, QWidget, QScrollArea, QFrame,
 )
 
-from app.ui.design_tokens import Light as L, FontSize, Radius, Spacing
+from app.ui.design_tokens import get_theme, ThemeManager, FontSize, Radius, Spacing
 from app.ui.components.base import (
     PageHeader, StatusBadge, ComingSoonBadge, AgentCard, _card_style,
 )
@@ -29,10 +29,20 @@ class AIChatPage(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        L = get_theme()
         self.setStyleSheet(f"background-color: {L.CANVAS};")
+        self._init_ui()
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
+
+    def apply_theme(self) -> None:
+        """Re-apply theme by rebuilding UI."""
+        old = self.layout()
+        if old is not None:
+            QWidget().setLayout(old)
         self._init_ui()
 
     def _init_ui(self):
+        L = get_theme()
         root = QVBoxLayout(self)
         root.setContentsMargins(Spacing.XL, Spacing.MD, Spacing.XL, Spacing.XL)
         root.setSpacing(Spacing.LG)
@@ -213,6 +223,7 @@ class AIChatPage(QWidget):
         SVG: user = #EEF5FF (light blue) + dark text
              AI   = #2563EB (deep blue) + white text
         """
+        L = get_theme()
         bubble = QFrame()
         is_user = msg["sender"] == "user"
 

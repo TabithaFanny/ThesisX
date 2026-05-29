@@ -11,6 +11,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QAction, QKeySequence
 from PyQt6.QtWidgets import (
     QApplication,
+    QDialog,
     QFileDialog,
     QMainWindow,
     QMessageBox,
@@ -204,8 +205,10 @@ class MainWindow(QMainWindow):
         self._apply_ai_config()
 
         # Apply saved theme
+        from app.ui.design_tokens import ThemeManager
         if self.config.get("theme") == "dark":
             self.setStyleSheet(DARK_STYLE)
+            ThemeManager.instance().set_dark(True)
 
         # Check for unsaved auto-recovery on startup
         self._check_auto_recovery()
@@ -241,28 +244,35 @@ class MainWindow(QMainWindow):
         # --- Mode 0: Workspace ---
         from app.ui.pages.workspace import Workspace
         from app.ui.pages.workspace_home import WorkspaceHomePage
-        from app.ui.pages.ai_chat_page import AIChatPage
         from app.ui.pages.literature import LiteraturePage
-        from app.ui.pages.data_charts import DataChartsPage
         from app.ui.pages.skill_library import SkillLibraryPage
-        from app.ui.pages.version_history import VersionHistoryPage
-        from app.ui.pages.collaboration import CollaborationPage
         from app.ui.pages.submission import SubmissionPage
         from app.ui.pages.settings_page import SettingsCenterPage
         from app.ui.pages.run_history_page import RunHistoryPage
         from app.ui.pages.knowledge_base import KnowledgeBasePage
         from app.ui.pages.theory_matcher import TheoryMatcherPage
+        from app.ui.pages.research_workspace_page import ResearchWorkspacePage
+        from app.ui.pages.evidence_pack_page import EvidencePackPage
+        from app.ui.pages.rag_search_page import RagSearchPage
+        from app.ui.pages.quality_dashboard_page import QualityDashboardPage
+        from app.ui.pages.export_center import ExportCenterPage
 
         self._workspace = Workspace()
-        self._workspace.add_page("home", WorkspaceHomePage())
-        self._workspace.add_page("ai_chat", AIChatPage())
+        home_page = WorkspaceHomePage()
+        home_page.navigate_to.connect(self._workspace.switch_to)
+        home_page.open_paper_draft.connect(self._show_agent_paper_dialog)
+        self._workspace.add_page("home", home_page)
+        research_page = ResearchWorkspacePage()
+        research_page.navigate_to.connect(self._workspace.switch_to)
+        self._workspace.add_page("research", research_page)
         self._workspace.add_page("literature", LiteraturePage())
         self._workspace.add_page("knowledge", KnowledgeBasePage())
-        self._workspace.add_page("data_charts", DataChartsPage())
         self._workspace.add_page("theory", TheoryMatcherPage())
         self._workspace.add_page("skills", SkillLibraryPage())
-        self._workspace.add_page("versions", VersionHistoryPage())
-        self._workspace.add_page("collaboration", CollaborationPage())
+        self._workspace.add_page("evidence", EvidencePackPage())
+        self._workspace.add_page("rag", RagSearchPage())
+        self._workspace.add_page("quality", QualityDashboardPage())
+        self._workspace.add_page("export", ExportCenterPage())
         self._workspace.add_page("submission", SubmissionPage())
         self._workspace.add_page("settings", SettingsCenterPage())
         run_history_page = RunHistoryPage()
@@ -275,6 +285,7 @@ class MainWindow(QMainWindow):
         # Phase D: store pre-built context paths for AgentTeamDialog
         self._knowledge_context_path = ""
         self._theory_context_path = ""
+        self._rag_context_bundle = ""
 
         # Connect knowledge/theory selection signals for Phase D wiring
         knowledge_page = self._workspace.page("knowledge")
@@ -283,6 +294,11 @@ class MainWindow(QMainWindow):
             knowledge_page.sources_selected.connect(self._on_knowledge_sources_selected)
         if theory_page:
             theory_page.theories_selected.connect(self._on_theories_selected)
+
+        # Connect RAG context signal
+        rag_page = self._workspace.page("rag")
+        if rag_page:
+            rag_page.context_ready.connect(self._on_rag_context_ready)
 
         # --- Mode 1: Editor ---
         self._editor_page = QWidget()
@@ -335,7 +351,8 @@ class MainWindow(QMainWindow):
         real editing functionality. Only adds outer visual wrappers.
         """
         from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
-        from app.ui.design_tokens import Light as L, FontSize, Radius, Spacing
+        from app.ui.design_tokens import get_theme, FontSize, Radius, Spacing
+        L = get_theme()
 
         # --- 1. Document info bar (above content splitter) ---
         doc_info = QFrame()
@@ -1373,6 +1390,7 @@ class MainWindow(QMainWindow):
 
     def _toggle_dark_mode(self, checked: bool):
         """Toggle between light and dark theme."""
+        from app.ui.design_tokens import ThemeManager
         if checked:
             self.setStyleSheet(DARK_STYLE)
             self.config.set("theme", "dark")
@@ -1380,6 +1398,7 @@ class MainWindow(QMainWindow):
             self.setStyleSheet(MAIN_STYLE)
             self.config.set("theme", "light")
         self.config.save()
+        ThemeManager.instance().set_dark(checked)
 
     def _show_settings(self):
         """Open the settings dialog."""
@@ -3382,7 +3401,27 @@ class MainWindow(QMainWindow):
             tm.export_candidates_as_context(candidates, out_path)
             self._theory_context_path = str(out_path)
         except Exception:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning("Failed to build theory context", exc_info=True)
             pass
+
+    def _on_rag_context_ready(self, bundle: str) -> None:
+        """Store RAG context bundle for next AgentTeam run."""
+        if not bundle:
+            return
+        self._rag_context_bundle = bundle
+        try:
+            ctx_dir = Path.home() / ".wenbiao" / "runs" / "_context"
+            ctx_dir.mkdir(parents=True, exist_ok=True)
+            (ctx_dir / "rag_context.md").write_text(bundle, encoding="utf-8")
+            self.status_bar.showMessage(
+                "RAG 上下文已就绪，将在下次 AI 写作中注入", 5000
+            )
+        except Exception:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning("Failed to write RAG context file", exc_info=True)
 
     def _import_agent_paper(self, markdown: str, mode: str = "new"):
         """Import generated paper into the editor."""
@@ -3411,6 +3450,40 @@ class MainWindow(QMainWindow):
                 self._current_markdown = markdown
             self.preview.set_content_from_markdown(self._current_markdown)
             self._update_title()
+        elif mode == "sections":
+            self._import_agent_paper_by_sections(markdown)
+
+    def _import_agent_paper_by_sections(self, markdown: str) -> None:
+        """Import AI-generated paper as sections — user picks which to insert."""
+        from app.core.editor.bridge import EditorBridge
+        from app.ui.outline_picker_dialog import OutlinePickerDialog
+
+        previews = EditorBridge.build_insert_preview(markdown, [])
+        if not previews:
+            QMessageBox.information(
+                self,
+                "无章节",
+                "AI 生成的论文没有检测到章节标题。将作为全文插入。",
+            )
+            self._import_agent_paper(markdown, mode="new")
+            return
+
+        dialog = OutlinePickerDialog(previews, self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        selected = dialog.selected_titles
+        if not selected:
+            return
+
+        current = self._current_markdown or ""
+        result = EditorBridge.apply_preview(current, previews, selected)
+        self._current_markdown = result
+        self.preview.set_content_from_markdown(result)
+        self._update_title()
+        self.status_bar.showMessage(
+            f"已插入 {len(selected)} 个章节到编辑器", 5000
+        )
 
     def closeEvent(self, event):
         if self._check_save():

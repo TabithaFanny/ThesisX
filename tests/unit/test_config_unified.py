@@ -200,3 +200,53 @@ class TestAgentTeamConfigHealth:
         }
         health = config.get_agent_team_config_health()
         assert any("默认值" in w for w in health["warnings"])
+
+
+class TestImageGenerationConfig:
+    def test_image_generation_config_prefers_env(self, monkeypatch):
+        monkeypatch.setenv("AZURE_GPT_IMAGE_KEY", "env-image-key")
+        monkeypatch.setenv("AZURE_GPT_IMAGE_ENDPOINT", "https://env.example.com/images")
+        monkeypatch.setenv("OPENAI_IMAGE_MODEL", "env-image-model")
+
+        config = Config()
+        config._data = {
+            "custom_image_api_key": "config-image-key",
+            "custom_image_api_url": "https://config.example.com/images",
+            "custom_image_model": "config-image-model",
+            "custom_image_auth_header": "api-key",
+            "custom_image_size": "1024x1024",
+            "custom_image_quality": "auto",
+        }
+
+        image_cfg = config.get_image_generation_config()
+
+        assert image_cfg["api_key"] == "env-image-key"
+        assert image_cfg["api_url"] == "https://env.example.com/images"
+        assert image_cfg["model"] == "env-image-model"
+
+    def test_image_generation_config_uses_config_without_touching_chat_defaults(self, monkeypatch):
+        monkeypatch.delenv("AZURE_GPT_IMAGE_KEY", raising=False)
+        monkeypatch.delenv("AZURE_GPT_IMAGE_ENDPOINT", raising=False)
+        monkeypatch.delenv("OPENAI_IMAGE_MODEL", raising=False)
+
+        config = Config()
+        config._data = {
+            "custom_ai_api_url": "",
+            "custom_ai_model": "claude-opus-4-6-thinking",
+            "custom_ai_api_key": "",
+            "custom_image_api_key": "config-image-key",
+            "custom_image_api_url": "https://config.example.com/images",
+            "custom_image_model": "gpt-image-2",
+            "custom_image_auth_header": "api-key",
+            "custom_image_size": "1024x1024",
+            "custom_image_quality": "auto",
+        }
+
+        image_cfg = config.get_image_generation_config()
+        chat_cfg = config.get_agent_team_config()
+
+        assert image_cfg["api_key"] == "config-image-key"
+        assert image_cfg["api_url"] == "https://config.example.com/images"
+        assert image_cfg["model"] == "gpt-image-2"
+        assert chat_cfg["model"] == "claude-opus-4-6-thinking"
+        assert chat_cfg["base_url"] == "https://api.openai.com/v1"

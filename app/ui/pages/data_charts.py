@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from app.ui.components.base import ComingSoonBadge, PageHeader, PreviewBadge, StatusBadge, _card_style
-from app.ui.design_tokens import Light as L, FontSize, Radius, Spacing
+from app.ui.design_tokens import get_theme, ThemeManager, FontSize, Radius, Spacing
 from app.ui.mock.pages_data import MOCK_CHARTS, MOCK_DATASET_CATEGORIES, MOCK_DATASETS
 
 
@@ -24,10 +24,20 @@ class DataChartsPage(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        L = get_theme()
         self.setStyleSheet(f"background-color: {L.CANVAS};")
+        self._init_ui()
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
+
+    def apply_theme(self) -> None:
+        """Re-apply theme by rebuilding UI."""
+        old = self.layout()
+        if old is not None:
+            QWidget().setLayout(old)
         self._init_ui()
 
     def _init_ui(self):
+        L = get_theme()
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -68,6 +78,7 @@ class DataChartsPage(QWidget):
         root.addWidget(scroll)
 
     def _create_category_panel(self) -> QFrame:
+        L = get_theme()
         panel = QFrame()
         panel.setFixedWidth(164)
         panel.setStyleSheet(
@@ -102,6 +113,7 @@ class DataChartsPage(QWidget):
         return panel
 
     def _create_files_panel(self) -> QFrame:
+        L = get_theme()
         panel = QFrame()
         panel.setStyleSheet(_card_style())
         layout = QVBoxLayout(panel)
@@ -166,6 +178,7 @@ class DataChartsPage(QWidget):
         header: bool = False,
         status_type: str = "muted",
     ) -> QFrame:
+        L = get_theme()
         row = QFrame()
         row.setStyleSheet(
             f"QFrame {{ background-color: {'transparent' if header else L.SURFACE}; "
@@ -216,6 +229,7 @@ class DataChartsPage(QWidget):
         return row
 
     def _create_chart_panel(self) -> QFrame:
+        L = get_theme()
         panel = QFrame()
         panel.setStyleSheet(_card_style())
         layout = QVBoxLayout(panel)
@@ -242,6 +256,7 @@ class DataChartsPage(QWidget):
         return panel
 
     def _chart_card(self, chart: dict) -> QFrame:
+        L = get_theme()
         card = QFrame()
         card.setMinimumHeight(124)
         card.setStyleSheet(_card_style())
@@ -282,6 +297,7 @@ class DataChartsPage(QWidget):
         return card
 
     def _populate_chart_preview(self, layout: QVBoxLayout, preview_type: str) -> None:
+        L = get_theme()
         if preview_type == "bar":
             row = QHBoxLayout()
             row.setSpacing(Spacing.XS)

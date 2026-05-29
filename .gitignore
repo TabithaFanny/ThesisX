@@ -40,3 +40,19 @@ Thumbs.db
 desktop.ini
 
 .night-shift/
+
+# Node/Web
+node_modules/
+.next/
+*.node
+npm-debug.log
+
+# Large files
+*.pptx
+123.pptx
+htmlcov/
+.coverage
+
+# Memory/temp
+.memory/
+~

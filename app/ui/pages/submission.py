@@ -25,7 +25,7 @@ from PyQt6.QtWidgets import (
 )
 
 from app.ui.components.base import ComingSoonBadge, PageHeader, PreviewBadge, StatusBadge, _card_style
-from app.ui.design_tokens import Light as L, FontSize, Radius, Spacing
+from app.ui.design_tokens import get_theme, ThemeManager, FontSize, Radius, Spacing
 
 
 class SubmissionPage(QWidget):
@@ -37,14 +37,16 @@ class SubmissionPage(QWidget):
         self._current_sub_id: str | None = None
         self._init_ui()
         self._load_records()
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
 
     def _init_ui(self) -> None:
+        L = get_theme()
         self.setStyleSheet(f"background-color: {L.CANVAS};")
 
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}")
+        self._scroll = QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._scroll.setStyleSheet(f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}")
 
         content = QWidget()
         content.setStyleSheet(f"background-color: {L.CANVAS};")
@@ -52,13 +54,12 @@ class SubmissionPage(QWidget):
         layout.setContentsMargins(Spacing.XL, Spacing.MD, Spacing.XL, Spacing.XL)
         layout.setSpacing(Spacing.LG)
 
-        header_row = QHBoxLayout()
-        header_row.addWidget(
-            PageHeader(
-                "投稿与回复",
-                "管理投稿记录，跟踪审稿状态，规划 rebuttal 回复计划。",
-            )
+        self._header_widget = PageHeader(
+            "投稿与回复",
+            "管理投稿记录，跟踪审稿状态，规划 rebuttal 回复计划。",
         )
+        header_row = QHBoxLayout()
+        header_row.addWidget(self._header_widget)
         header_row.addStretch()
         layout.addLayout(header_row)
 
@@ -66,24 +67,28 @@ class SubmissionPage(QWidget):
 
         main_row = QHBoxLayout()
         main_row.setSpacing(Spacing.MD)
-        main_row.addWidget(self._create_submission_table(), 2)
-        main_row.addWidget(self._create_rebuttal_panel())
+        self._submission_table = self._create_submission_table()
+        main_row.addWidget(self._submission_table, 2)
+        self._rebuttal_panel = self._create_rebuttal_panel()
+        main_row.addWidget(self._rebuttal_panel)
         layout.addLayout(main_row, 1)
 
         layout.addStretch()
-        scroll.setWidget(content)
+        self._scroll.setWidget(content)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
-        root.addWidget(scroll)
+        root.addWidget(self._scroll)
 
     def _create_stats_row(self) -> QHBoxLayout:
+        L = get_theme()
         row = QHBoxLayout()
         row.setSpacing(Spacing.MD)
 
-        self._stat_cards: list[tuple[QLabel, str]] = []
+        self._stat_cards: list[tuple[QLabel, QLabel, str]] = []  # (count_lbl, name_lbl, key)
+        self._stat_card_frames: list[QFrame] = []
 
-        for label in ["草稿", "已投稿", "审稿中", "修改中", "已接受", "已拒绝"]:
+        for label_str in ["草稿", "已投稿", "审稿中", "修改中", "已接受", "已拒绝"]:
             card = QFrame()
             card.setStyleSheet(_card_style())
             card.setMinimumWidth(80)
@@ -98,44 +103,46 @@ class SubmissionPage(QWidget):
             )
             card_layout.addWidget(count_lbl)
 
-            lbl = QLabel(label)
-            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            lbl.setStyleSheet(
+            name_lbl = QLabel(label_str)
+            name_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            name_lbl.setStyleSheet(
                 f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_SECONDARY};"
             )
-            card_layout.addWidget(lbl)
+            card_layout.addWidget(name_lbl)
 
             row.addWidget(card)
-            self._stat_cards.append((count_lbl, label.lower()))
+            self._stat_card_frames.append(card)
+            self._stat_cards.append((count_lbl, name_lbl, label_str.lower()))
 
         row.addStretch()
         return row
 
     def _create_submission_table(self) -> QFrame:
-        panel = QFrame()
-        panel.setStyleSheet(_card_style())
-        layout = QVBoxLayout(panel)
+        L = get_theme()
+        self._submission_panel = QFrame()
+        self._submission_panel.setStyleSheet(_card_style())
+        layout = QVBoxLayout(self._submission_panel)
         layout.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
         layout.setSpacing(Spacing.SM)
 
         top_row = QHBoxLayout()
-        title = QLabel("投稿记录")
-        title.setStyleSheet(
+        self._submission_title = QLabel("投稿记录")
+        self._submission_title.setStyleSheet(
             f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
         )
-        top_row.addWidget(title)
+        top_row.addWidget(self._submission_title)
         top_row.addStretch()
 
-        add_btn = QPushButton("新增投稿")
-        add_btn.setFixedHeight(28)
-        add_btn.setStyleSheet(
+        self._add_btn = QPushButton("新增投稿")
+        self._add_btn.setFixedHeight(28)
+        self._add_btn.setStyleSheet(
             f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
             f"border: none; border-radius: {Radius.BUTTON}px; "
             f"padding: 0 {Spacing.MD}px; font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
             f"QPushButton:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
         )
-        add_btn.clicked.connect(self._on_add_submission)
-        top_row.addWidget(add_btn)
+        self._add_btn.clicked.connect(self._on_add_submission)
+        top_row.addWidget(self._add_btn)
 
         layout.addLayout(top_row)
 
@@ -146,21 +153,22 @@ class SubmissionPage(QWidget):
         self._record_list.itemClicked.connect(self._on_record_selected)
         layout.addWidget(self._record_list)
 
-        return panel
+        return self._submission_panel
 
     def _create_rebuttal_panel(self) -> QFrame:
-        panel = QFrame()
-        panel.setFixedWidth(280)
-        panel.setStyleSheet(_card_style())
-        layout = QVBoxLayout(panel)
+        L = get_theme()
+        self._rebuttal_panel_frame = QFrame()
+        self._rebuttal_panel_frame.setFixedWidth(280)
+        self._rebuttal_panel_frame.setStyleSheet(_card_style())
+        layout = QVBoxLayout(self._rebuttal_panel_frame)
         layout.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
         layout.setSpacing(Spacing.SM)
 
-        title = QLabel("审稿意见 / Rebuttal")
-        title.setStyleSheet(
+        self._rebuttal_header = QLabel("审稿意见 / Rebuttal")
+        self._rebuttal_header.setStyleSheet(
             f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
         )
-        layout.addWidget(title)
+        layout.addWidget(self._rebuttal_header)
 
         self._rebuttal_title = QLabel("选择一条投稿查看审稿意见")
         self._rebuttal_title.setWordWrap(True)
@@ -194,31 +202,31 @@ class SubmissionPage(QWidget):
         btn_row = QHBoxLayout()
         btn_row.setSpacing(Spacing.SM)
 
-        gen_btn = QPushButton("生成回复计划")
-        gen_btn.setStyleSheet(
+        self._gen_btn = QPushButton("生成回复计划")
+        self._gen_btn.setStyleSheet(
             f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
             f"border: none; border-radius: {Radius.BUTTON}px; "
             f"padding: {Spacing.XS}px {Spacing.SM}px; "
             f"font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
             f"QPushButton:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
         )
-        gen_btn.clicked.connect(self._on_generate_rebuttal)
-        btn_row.addWidget(gen_btn)
+        self._gen_btn.clicked.connect(self._on_generate_rebuttal)
+        btn_row.addWidget(self._gen_btn)
 
-        export_btn = QPushButton("导出 Markdown")
-        export_btn.setStyleSheet(
+        self._export_btn = QPushButton("导出 Markdown")
+        self._export_btn.setStyleSheet(
             f"QPushButton {{ background-color: {L.SURFACE_ALT}; color: {L.TEXT_PRIMARY}; "
             f"border: 1px solid {L.BORDER}; border-radius: {Radius.BUTTON}px; "
             f"padding: {Spacing.XS}px {Spacing.SM}px; "
             f"font-size: {FontSize.SECONDARY}px; }} "
             f"QPushButton:hover {{ background-color: {L.SURFACE}; }}"
         )
-        export_btn.clicked.connect(self._on_export_rebuttal)
-        btn_row.addWidget(export_btn)
+        self._export_btn.clicked.connect(self._on_export_rebuttal)
+        btn_row.addWidget(self._export_btn)
 
         layout.addLayout(btn_row)
         layout.addStretch()
-        return panel
+        return self._rebuttal_panel_frame
 
     def _load_records(self) -> None:
         try:
@@ -226,6 +234,9 @@ class SubmissionPage(QWidget):
             svc = SubmissionService()
             records = svc.list_all()
         except Exception:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning("Failed to load submission records", exc_info=True)
             records = []
 
         self._record_list.clear()
@@ -251,7 +262,7 @@ class SubmissionPage(QWidget):
             key = status_map.get(rec.status, "草稿")
             counts[key] = counts.get(key, 0) + 1
 
-        for lbl, key in self._stat_cards:
+        for lbl, _name_lbl, key in self._stat_cards:
             lbl.setText(str(counts.get(key, 0)))
 
     def _on_add_submission(self) -> None:
@@ -317,3 +328,69 @@ class SubmissionPage(QWidget):
             encoding="utf-8",
         )
         QMessageBox.information(self, "已导出", f"回复计划已保存至：\n{out_path}")
+
+    # ── theme ─────────────────────────────────────────────────────────────
+
+    def apply_theme(self) -> None:
+        """Re-apply all widget styles using current theme tokens."""
+        L = get_theme()
+        self._header_widget.apply_theme()
+        self.setStyleSheet(f"background-color: {L.CANVAS};")
+        self._scroll.setStyleSheet(
+            f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}"
+        )
+        self._submission_panel.setStyleSheet(_card_style())
+        self._rebuttal_panel_frame.setStyleSheet(_card_style())
+        # Stats row cards
+        for card in self._stat_card_frames:
+            card.setStyleSheet(_card_style())
+        for count_lbl, name_lbl, _key in self._stat_cards:
+            count_lbl.setStyleSheet(
+                f"font-size: {FontSize.PANEL_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
+            )
+            name_lbl.setStyleSheet(
+                f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_SECONDARY};"
+            )
+        # Submission table
+        self._submission_title.setStyleSheet(
+            f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
+        )
+        self._add_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
+            f"border: none; border-radius: {Radius.BUTTON}px; "
+            f"padding: 0 {Spacing.MD}px; font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
+            f"QPushButton:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
+        )
+        # Rebuttal panel
+        self._rebuttal_header.setStyleSheet(
+            f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
+        )
+        self._rebuttal_title.setStyleSheet(
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_MUTED};"
+        )
+        self._rebuttal_concerns.setStyleSheet(
+            f"QTextEdit {{ background-color: {L.SURFACE}; border: 1px solid {L.BORDER}; "
+            f"border-radius: {Radius.INPUT}px; padding: {Spacing.SM}px; "
+            f"font-size: {FontSize.SMALL}px; color: {L.TEXT_PRIMARY}; "
+            f"font-family: 'PingFang SC', sans-serif; }}"
+        )
+        self._rebuttal_plan.setStyleSheet(
+            f"QTextEdit {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.INPUT}px; padding: {Spacing.SM}px; "
+            f"font-size: {FontSize.SMALL}px; color: {L.TEXT_PRIMARY}; "
+            f"font-family: 'PingFang SC', sans-serif; }}"
+        )
+        self._gen_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
+            f"border: none; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.SM}px; "
+            f"font-size: {FontSize.SECONDARY}px; font-weight: bold; }} "
+            f"QPushButton:hover {{ background-color: {L.PRIMARY_HOVER}; }}"
+        )
+        self._export_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.SURFACE_ALT}; color: {L.TEXT_PRIMARY}; "
+            f"border: 1px solid {L.BORDER}; border-radius: {Radius.BUTTON}px; "
+            f"padding: {Spacing.XS}px {Spacing.SM}px; "
+            f"font-size: {FontSize.SECONDARY}px; }} "
+            f"QPushButton:hover {{ background-color: {L.SURFACE}; }}"
+        )

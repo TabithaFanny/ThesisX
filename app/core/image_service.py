@@ -14,11 +14,15 @@ AI 生成的 Markdown 可能包含以下占位标记：
 
 import json
 import logging
+import base64
+import hashlib
+import os
 import re
 import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 from PyQt6.QtCore import QThread, pyqtSignal
 
@@ -470,6 +474,71 @@ def _validate_image_url(url: str) -> bool:
         return False
 
 
+def _get_image_generation_config() -> dict:
+    try:
+        from app.core.config import Config
+
+        return Config().get_image_generation_config()
+    except Exception as e:
+        logger.debug("读取图片生成配置失败: %s", e)
+        return {}
+
+
+def _get_generated_image_dir() -> Path:
+    output_dir = Path.home() / ".wenbiao" / "generated_images"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    return output_dir
+
+
+def _save_generated_image(image_bytes: bytes, prompt: str) -> str:
+    digest = hashlib.sha256(prompt.encode("utf-8")).hexdigest()[:24]
+    output_path = _get_generated_image_dir() / f"{digest}.png"
+    output_path.write_bytes(image_bytes)
+    return output_path.as_uri()
+
+
+def _generate_image_via_api(prompt: str) -> str | None:
+    cfg = _get_image_generation_config()
+    api_url = (cfg.get("api_url") or "").strip()
+    api_key = (cfg.get("api_key") or "").strip()
+    if not api_url or not api_key:
+        return None
+
+    auth_header = (cfg.get("auth_header") or "api-key").strip() or "api-key"
+    payload = {
+        "prompt": prompt,
+        "n": 1,
+        "size": cfg.get("size") or "1024x1024",
+        "quality": cfg.get("quality") or "auto",
+    }
+    # Non-Azure compatible endpoints may still require an explicit model field.
+    if auth_header.lower() == "authorization" and cfg.get("model"):
+        payload["model"] = cfg["model"]
+
+    data = json.dumps(payload).encode("utf-8")
+    headers = {
+        "Content-Type": "application/json",
+        auth_header: api_key if auth_header.lower() == "api-key" else f"Bearer {api_key}",
+    }
+    try:
+        req = urllib.request.Request(api_url, data=data, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=90) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+        items = result.get("data", [])
+        if not items:
+            return None
+        image_b64 = items[0].get("b64_json", "")
+        if not image_b64:
+            return None
+        image_bytes = base64.b64decode(image_b64)
+        generated_path = _save_generated_image(image_bytes, prompt)
+        logger.info("图片生成成功: %s", generated_path)
+        return generated_path
+    except Exception as e:
+        logger.warning("图片生成失败 (%s): %s", prompt, e)
+        return None
+
+
 def _search_image_url(
     keyword: str,
     pixabay_key: str = "",
@@ -542,6 +611,10 @@ def _search_image_url(
             if url and _validate_image_url(url):
                 logger.info("图片来源 fallback: %s", url)
                 return url
+
+    generated_url = _generate_image_via_api(keyword)
+    if generated_url:
+        return generated_url
 
     # Picsum 兆底（语义 seed 保证可访问）
     en_kw = _translate_keyword(keyword)

@@ -158,3 +158,49 @@ class Spacing:
     LG = 16
     XL = 20
     XXL = 24
+
+
+# ---------------------------------------------------------------------------
+# Theme manager — enables Light ↔ Dark switching at runtime
+# ---------------------------------------------------------------------------
+
+from PyQt6.QtCore import QObject, pyqtSignal
+
+
+class ThemeManager(QObject):
+    """Singleton that tracks the current theme and notifies subscribers."""
+
+    _instance: "ThemeManager | None" = None
+    theme_changed = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+        self._dark = False
+
+    @classmethod
+    def instance(cls) -> "ThemeManager":
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    @property
+    def theme(self):
+        """Return the current theme class (Light or Dark)."""
+        return Dark if self._dark else Light
+
+    @property
+    def is_dark(self) -> bool:
+        return self._dark
+
+    def set_dark(self, dark: bool) -> None:
+        if self._dark != dark:
+            self._dark = dark
+            self.theme_changed.emit()
+
+    def toggle(self) -> None:
+        self.set_dark(not self._dark)
+
+
+def get_theme():
+    """Convenience: return current theme class (Light or Dark)."""
+    return ThemeManager.instance().theme

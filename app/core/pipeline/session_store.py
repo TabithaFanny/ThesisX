@@ -40,6 +40,7 @@ class SessionPaths:
     selected_skills_md: Path
     knowledge_context_md: Path
     theory_context_md: Path
+    rag_context_md: Path
 
 
 class SessionStore:
@@ -100,25 +101,38 @@ class SessionStore:
                 "- 当前阶段不接真实 API，不接 CLI，不接 Skill Registry，不接 RAG / Zotero / Git。",
             ]),
         )
-        self._write_text(
-            self.paths.selected_skills_md,
-            "\n".join([
-                "# Selected Skills",
-                "",
-                "- 当前未接入真实 Skill Registry。",
-                "- 本次运行未选择可执行技能列表。",
-                "- 该文件为后续 Runtime / CLI / Skill 接通预留。",
-            ]),
-        )
-        # Try to load real skills from ~/.wenbiao/skills/
+        # Selected skills — from enabled skill store (Vision 3.8)
         try:
             from app.core.skills.loader import SkillLoader
+            from app.core.skills.enabled_store import EnabledSkillsStore
             loader = SkillLoader()
-            skills = loader.load_local_skills()
-            if skills:
-                self._write_text(self.paths.selected_skills_md, loader.render_selected_skills_md(skills))
+            all_skills = loader.load_local_skills()
+            enabled_set = EnabledSkillsStore().load()
+            enabled_skills = [s for s in all_skills if s.name in enabled_set]
+            if enabled_skills:
+                self._write_text(self.paths.selected_skills_md, loader.render_selected_skills_md(enabled_skills))
+            else:
+                # Write placeholder when no skills enabled
+                self._write_text(
+                    self.paths.selected_skills_md,
+                    "\n".join([
+                        "# Selected Skills",
+                        "",
+                        "（未启用任何本地技能。请在写作技能库页面启用。）",
+                    ]),
+                )
         except Exception:
-            pass  # Fall back to placeholder above
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning("Failed to load skills for session context", exc_info=True)
+            self._write_text(
+                self.paths.selected_skills_md,
+                "\n".join([
+                    "# Selected Skills",
+                    "",
+                    "（技能库加载失败，请联系开发者。）",
+                ]),
+            )
 
         # knowledge_context.md — populated from pre-built context file or Phase B default
         if request.knowledge_context_path:
@@ -156,6 +170,30 @@ class SessionStore:
                 "- 当前未连接理论匹配系统。\n"
                 "- 用户未选择本次生成使用的理论框架。\n"
                 "- Phase B（理论匹配）接入后将填充本文件。\n",
+            )
+
+        # rag_context.md — populated from pre-built RAG context or placeholder
+        rag_path = Path.home() / ".wenbiao" / "runs" / "_context" / "rag_context.md"
+        if rag_path.exists():
+            try:
+                self._write_text(
+                    self.paths.rag_context_md,
+                    rag_path.read_text(encoding="utf-8"),
+                )
+            except Exception:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning("Failed to read RAG context file", exc_info=True)
+                self._write_text(
+                    self.paths.rag_context_md,
+                    "# RAG Context\n\n- RAG context file not readable.\n",
+                )
+        else:
+            self._write_text(
+                self.paths.rag_context_md,
+                "# RAG Context\n\n"
+                "- 当前未注入 RAG 上下文。\n"
+                "- 请在 RAG 检索页面搜索并注入上下文。\n",
             )
 
     def append_event(self, event: PaperEvent | dict[str, Any]) -> None:
@@ -275,6 +313,7 @@ class SessionStore:
             selected_skills_md=context_dir / "selected_skills.md",
             knowledge_context_md=context_dir / "knowledge_context.md",
             theory_context_md=context_dir / "theory_context.md",
+            rag_context_md=context_dir / "rag_context.md",
         )
 
     def _ensure_layout(self) -> None:

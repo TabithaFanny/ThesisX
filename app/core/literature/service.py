@@ -264,6 +264,55 @@ class LiteratureService:
         return ref
 
     # -------------------------------------------------------------------------
+    # Citation key generation
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def generate_citation_key(ref: Reference) -> str:
+        """Generate an authorYearShortTitle citation key.
+
+        Format: <first author surname><year><first 3 title word initials>
+        Example: Smith 2020 "Machine Learning Approaches" → smith2020mla
+        """
+        # Extract first author's surname
+        surname = "unknown"
+        if ref.authors:
+            first_author = ref.authors[0].strip()
+            # Handle "Last, First" (Western) and "张三" (Chinese) formats
+            if "," in first_author:
+                surname = first_author.split(",")[0].strip()
+            else:
+                parts = first_author.split()
+                surname = parts[-1] if parts else first_author
+        surname = surname.lower().replace(".", "").replace(",", "")
+
+        # Year
+        year = ref.year or "0000"
+
+        # Title initials (first letter of first 3 meaningful words, skip stop words)
+        stop_words = {"a", "an", "the", "of", "in", "on", "to", "for", "and", "or", "with"}
+        title_words = ref.title.lower().split()
+        meaningful = [w for w in title_words if w not in stop_words]
+        initials = "".join(w[0] for w in meaningful[:3])
+
+        return f"{surname}{year}{initials}"
+
+    def resolve_duplicate_key(self, base_key: str) -> str:
+        """Resolve duplicate citation keys by appending a, b, c..."""
+        existing = self.list_references()
+        existing_keys: set[str] = set()
+        for r in existing:
+            existing_keys.add(self.generate_citation_key(r))
+
+        if base_key not in existing_keys:
+            return base_key
+        for suffix in "abcdefghijklmnopqrstuvwxyz":
+            candidate = f"{base_key}{suffix}"
+            if candidate not in existing_keys:
+                return candidate
+        return f"{base_key}z"
+
+    # -------------------------------------------------------------------------
     # Persistence
     # -------------------------------------------------------------------------
 

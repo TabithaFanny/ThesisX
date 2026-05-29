@@ -5,22 +5,23 @@ from __future__ import annotations
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QFrame, QLabel, QHBoxLayout, QVBoxLayout, QWidget
 
-from app.ui.design_tokens import Light as L, FontSize, Radius, Spacing
+from app.ui.design_tokens import get_theme, ThemeManager, FontSize, Radius, Spacing
 
 
 # Navigation items: (id, title, subtitle)
 NAV_ITEMS = [
     ("home", "工作台 / 首页", "模块入口与状态摘要"),
     ("editor", "编辑器", "主要交互页"),
-    ("ai_chat", "AI 对话 / 助手", "对话与上下文工作区"),
+    ("research", "研究工作空间", "项目与问题定义"),
     ("literature", "文献管理", "文献库与详情预览"),
     ("knowledge", "知识库", "本地资料库与检索"),
-    ("data_charts", "数据与图表", "数据表与图表资产"),
+    ("rag", "RAG 检索", "BM25 知识库语义搜索"),
     ("theory", "理论匹配", "研究问题与理论框架"),
     ("skills", "写作技能库", "技能卡片与调用入口"),
-    ("versions", "版本历史", "版本差异与快照预览"),
-    ("collaboration", "协作空间", "讨论与任务状态"),
+    ("evidence", "证据包", "Claim-Evidence 链管理"),
+    ("export", "导出中心", "论文/引文/记录导出"),
     ("submission", "投稿与回复", "投稿表与回复计划"),
+    ("quality", "质量仪表盘", "论文质量指标总览"),
     ("settings", "设置中心", "模型、偏好与连接器"),
     ("run_history", "运行历史", "本地运行记录与诊断"),
 ]
@@ -91,6 +92,7 @@ class _NavItem(QFrame):
         self._apply_style()
 
     def _apply_style(self) -> None:
+        L = get_theme()
         if self._active:
             bg = L.PRIMARY_LIGHT
             border = L.PRIMARY_BORDER
@@ -146,11 +148,13 @@ class SidebarNav(QWidget):
         self._buttons: dict[str, _NavItem] = {}
         self._current = "home"
         self._init_ui()
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
 
     def _init_ui(self) -> None:
+        L = get_theme()
         self.setStyleSheet(
             f"background-color: {L.SURFACE}; "
-            f"border: 1px solid {L.BORDER}; "
+            f"border: none; "
             f"border-radius: {Radius.PAGE}px;"
         )
 
@@ -162,23 +166,23 @@ class SidebarNav(QWidget):
         brand_col.setContentsMargins(0, 0, 0, 0)
         brand_col.setSpacing(2)
 
-        brand = QLabel("ThesisX")
-        brand.setStyleSheet(
+        self._brand_label = QLabel("ThesisX")
+        self._brand_label.setStyleSheet(
             f"font-size: 20px; font-weight: 800; color: {L.PRIMARY};"
         )
-        brand_col.addWidget(brand)
+        brand_col.addWidget(self._brand_label)
 
-        tagline = QLabel("Academic Writing Workspace")
-        tagline.setStyleSheet(
+        self._tagline_label = QLabel("Academic Writing Workspace")
+        self._tagline_label.setStyleSheet(
             f"font-size: {FontSize.MICRO}px; color: {L.TEXT_MUTED};"
         )
-        brand_col.addWidget(tagline)
+        brand_col.addWidget(self._tagline_label)
         layout.addLayout(brand_col)
 
-        sep = QFrame()
-        sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background-color: {L.BORDER_SUBTLE}; border: none;")
-        layout.addWidget(sep)
+        self._sep = QFrame()
+        self._sep.setFixedHeight(1)
+        self._sep.setStyleSheet(f"background-color: {L.BORDER_SUBTLE}; border: none;")
+        layout.addWidget(self._sep)
 
         items_col = QVBoxLayout()
         items_col.setContentsMargins(0, 0, 0, 0)
@@ -191,29 +195,57 @@ class SidebarNav(QWidget):
         layout.addLayout(items_col)
         layout.addStretch()
 
-        footer = QFrame()
-        footer.setStyleSheet(
+        self._footer = QFrame()
+        self._footer.setStyleSheet(
             f"QFrame {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER_SUBTLE}; "
             f"border-radius: {Radius.PANEL}px; }}"
         )
-        footer_layout = QVBoxLayout(footer)
+        footer_layout = QVBoxLayout(self._footer)
         footer_layout.setContentsMargins(Spacing.SM, Spacing.SM, Spacing.SM, Spacing.SM)
         footer_layout.setSpacing(2)
 
-        footer_title = QLabel("Workspace Shell")
-        footer_title.setStyleSheet(
+        self._footer_title = QLabel("Workspace Shell")
+        self._footer_title.setStyleSheet(
             f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_PRIMARY}; font-weight: 600;"
         )
-        footer_layout.addWidget(footer_title)
+        footer_layout.addWidget(self._footer_title)
 
-        footer_status = QLabel("13 个页面导航")
-        footer_status.setStyleSheet(
+        self._footer_status = QLabel("14 个页面导航")
+        self._footer_status.setStyleSheet(
             f"font-size: {FontSize.MICRO}px; color: {L.TEXT_MUTED};"
         )
-        footer_layout.addWidget(footer_status)
-        layout.addWidget(footer)
+        footer_layout.addWidget(self._footer_status)
+        layout.addWidget(self._footer)
 
         self._set_active("home")
+
+    def apply_theme(self) -> None:
+        L = get_theme()
+        self.setStyleSheet(
+            f"background-color: {L.SURFACE}; "
+            f"border: none; "
+            f"border-radius: {Radius.PAGE}px;"
+        )
+        self._brand_label.setStyleSheet(
+            f"font-size: 20px; font-weight: 800; color: {L.PRIMARY};"
+        )
+        self._tagline_label.setStyleSheet(
+            f"font-size: {FontSize.MICRO}px; color: {L.TEXT_MUTED};"
+        )
+        self._sep.setStyleSheet(f"background-color: {L.BORDER_SUBTLE}; border: none;")
+        self._footer.setStyleSheet(
+            f"QFrame {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.PANEL}px; }}"
+        )
+        self._footer_title.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_PRIMARY}; font-weight: 600;"
+        )
+        self._footer_status.setStyleSheet(
+            f"font-size: {FontSize.MICRO}px; color: {L.TEXT_MUTED};"
+        )
+        # Re-apply styles on all nav items
+        for btn in self._buttons.values():
+            btn._apply_style()
 
     def _create_nav_item(self, item_id: str, index: int, title: str, subtitle: str) -> _NavItem:
         btn = _NavItem(item_id, index, title, subtitle)

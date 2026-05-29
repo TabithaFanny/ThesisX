@@ -81,7 +81,7 @@ class TestSessionStore:
 
         assert "上下文测试" in store.paths.paper_request_md.read_text(encoding="utf-8")
         assert "当前阶段不接真实 API" in store.paths.user_constraints_md.read_text(encoding="utf-8")
-        assert "未接入真实 Skill Registry" in store.paths.selected_skills_md.read_text(encoding="utf-8")
+        assert "未启用任何本地技能" in store.paths.selected_skills_md.read_text(encoding="utf-8")
 
     def test_events_jsonl_is_append_only(self, tmp_path: Path):
         request = PaperRequest(topic="事件测试", base_dir=tmp_path)

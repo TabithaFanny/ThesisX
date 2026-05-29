@@ -24,7 +24,7 @@ from PyQt6.QtWidgets import (
 )
 
 from app.ui.components.base import PageHeader, StatusBadge, _card_style
-from app.ui.design_tokens import Light as L, FontSize, Radius, Spacing
+from app.ui.design_tokens import get_theme, ThemeManager, FontSize, Radius, Spacing
 
 
 class RunHistoryPage(QWidget):
@@ -40,27 +40,29 @@ class RunHistoryPage(QWidget):
         self._current_paper_path: str | None = None
         self._init_ui()
         self._load_runs()
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
 
     def _init_ui(self) -> None:
+        L = get_theme()
         self.setStyleSheet(f"background-color: {L.CANVAS};")
 
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}")
+        self._scroll = QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._scroll.setStyleSheet(f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}")
 
-        content = QWidget()
-        content.setStyleSheet(f"background-color: {L.CANVAS};")
-        root = QVBoxLayout(content)
+        self._content_widget = QWidget()
+        self._content_widget.setStyleSheet(f"background-color: {L.CANVAS};")
+        root = QVBoxLayout(self._content_widget)
         root.setContentsMargins(Spacing.XL, Spacing.MD, Spacing.XL, Spacing.XL)
         root.setSpacing(Spacing.LG)
 
         # Header
-        header = PageHeader(
+        self._header = PageHeader(
             "运行历史",
             "ThesisX 本地运行记录。只读视图，不修改任何文件。",
         )
-        root.addWidget(header)
+        root.addWidget(self._header)
 
         # Three-column layout
         cols = QHBoxLayout()
@@ -70,28 +72,29 @@ class RunHistoryPage(QWidget):
         cols.addWidget(self._create_info_panel(), 0)
         root.addLayout(cols, 1)
 
-        scroll.setWidget(content)
+        self._scroll.setWidget(self._content_widget)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(scroll)
+        layout.addWidget(self._scroll)
 
     def _create_list_panel(self) -> QFrame:
-        panel = QFrame()
-        panel.setFixedWidth(240)
-        panel.setStyleSheet(
+        L = get_theme()
+        self._list_panel = QFrame()
+        self._list_panel.setFixedWidth(240)
+        self._list_panel.setStyleSheet(
             f"QFrame {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER_SUBTLE}; "
             f"border-radius: {Radius.PANEL}px; }}"
         )
-        layout = QVBoxLayout(panel)
+        layout = QVBoxLayout(self._list_panel)
         layout.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
         layout.setSpacing(Spacing.SM)
 
-        title = QLabel("运行记录")
-        title.setStyleSheet(
+        self._list_title_label = QLabel("运行记录")
+        self._list_title_label.setStyleSheet(
             f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
         )
-        layout.addWidget(title)
+        layout.addWidget(self._list_title_label)
 
         self._run_list_container = QVBoxLayout()
         self._run_list_container.setSpacing(Spacing.XS)
@@ -104,12 +107,13 @@ class RunHistoryPage(QWidget):
         layout.addWidget(self._empty_label)
 
         layout.addStretch()
-        return panel
+        return self._list_panel
 
     def _create_preview_panel(self) -> QFrame:
-        panel = QFrame()
-        panel.setStyleSheet(_card_style())
-        layout = QVBoxLayout(panel)
+        L = get_theme()
+        self._preview_panel = QFrame()
+        self._preview_panel.setStyleSheet(_card_style(L))
+        layout = QVBoxLayout(self._preview_panel)
         layout.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
         layout.setSpacing(Spacing.MD)
 
@@ -138,7 +142,7 @@ class RunHistoryPage(QWidget):
         self._action_row = QHBoxLayout()
         self._action_row.setSpacing(Spacing.SM)
         self._action_row.addStretch()
-        self._open_editor_btn = QPushButton("📝 打开到编辑器")
+        self._open_editor_btn = QPushButton("\U0001f4dd 打开到编辑器")
         self._open_editor_btn.setEnabled(False)
         self._open_editor_btn.setFixedHeight(28)
         self._open_editor_btn.setStyleSheet(
@@ -153,22 +157,23 @@ class RunHistoryPage(QWidget):
         self._open_editor_btn.clicked.connect(self._on_open_editor)
         self._action_row.addWidget(self._open_editor_btn)
         layout.addLayout(self._action_row)
-        return panel
+        return self._preview_panel
 
     def _create_info_panel(self) -> QFrame:
-        panel = QFrame()
-        panel.setFixedWidth(280)
-        panel.setStyleSheet(_card_style())
-        layout = QVBoxLayout(panel)
+        L = get_theme()
+        self._info_panel = QFrame()
+        self._info_panel.setFixedWidth(280)
+        self._info_panel.setStyleSheet(_card_style(L))
+        layout = QVBoxLayout(self._info_panel)
         layout.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
         layout.setSpacing(Spacing.SM)
 
         title_row = QHBoxLayout()
-        title = QLabel("运行详情")
-        title.setStyleSheet(
+        self._info_title_label = QLabel("运行详情")
+        self._info_title_label.setStyleSheet(
             f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
         )
-        title_row.addWidget(title)
+        title_row.addWidget(self._info_title_label)
         title_row.addStretch()
         layout.addLayout(title_row)
 
@@ -181,9 +186,10 @@ class RunHistoryPage(QWidget):
         self._info_tabs.addTab(self._make_diagnostics_tab(), "诊断报告")
         layout.addWidget(self._info_tabs, 1)
 
-        return panel
+        return self._info_panel
 
     def _make_info_tab(self) -> QWidget:
+        L = get_theme()
         w = QWidget()
         layout = QVBoxLayout(w)
         layout.setContentsMargins(0, Spacing.SM, 0, 0)
@@ -200,6 +206,7 @@ class RunHistoryPage(QWidget):
         return w
 
     def _make_events_tab(self) -> QWidget:
+        L = get_theme()
         w = QWidget()
         layout = QVBoxLayout(w)
         layout.setContentsMargins(0, Spacing.SM, 0, 0)
@@ -207,7 +214,7 @@ class RunHistoryPage(QWidget):
         self._events_area = QScrollArea()
         self._events_area.setWidgetResizable(True)
         self._events_area.setFrameShape(QFrame.Shape.NoFrame)
-        self._events_area.setStyleSheet(f"QScrollArea {{ border: none; background: transparent; }}")
+        self._events_area.setStyleSheet("QScrollArea { border: none; background: transparent; }")
         self._events_content = QWidget()
         self._events_content.setStyleSheet("background: transparent;")
         self._events_layout = QVBoxLayout(self._events_content)
@@ -222,6 +229,7 @@ class RunHistoryPage(QWidget):
         return w
 
     def _make_messages_tab(self) -> QWidget:
+        L = get_theme()
         w = QWidget()
         layout = QVBoxLayout(w)
         layout.setContentsMargins(0, Spacing.SM, 0, 0)
@@ -229,7 +237,7 @@ class RunHistoryPage(QWidget):
         self._messages_area = QScrollArea()
         self._messages_area.setWidgetResizable(True)
         self._messages_area.setFrameShape(QFrame.Shape.NoFrame)
-        self._messages_area.setStyleSheet(f"QScrollArea {{ border: none; background: transparent; }}")
+        self._messages_area.setStyleSheet("QScrollArea { border: none; background: transparent; }")
         self._messages_content = QWidget()
         self._messages_content.setStyleSheet("background: transparent;")
         self._messages_layout = QVBoxLayout(self._messages_content)
@@ -244,6 +252,7 @@ class RunHistoryPage(QWidget):
         return w
 
     def _make_diagnostics_tab(self) -> QWidget:
+        L = get_theme()
         w = QWidget()
         layout = QVBoxLayout(w)
         layout.setContentsMargins(0, Spacing.SM, 0, 0)
@@ -251,7 +260,7 @@ class RunHistoryPage(QWidget):
         self._diagnostics_area = QScrollArea()
         self._diagnostics_area.setWidgetResizable(True)
         self._diagnostics_area.setFrameShape(QFrame.Shape.NoFrame)
-        self._diagnostics_area.setStyleSheet(f"QScrollArea {{ border: none; background: transparent; }}")
+        self._diagnostics_area.setStyleSheet("QScrollArea { border: none; background: transparent; }")
         self._diagnostics_content = QWidget()
         self._diagnostics_content.setStyleSheet("background: transparent;")
         self._diagnostics_layout = QVBoxLayout(self._diagnostics_content)
@@ -294,6 +303,7 @@ class RunHistoryPage(QWidget):
         self._run_list_container.addStretch()
 
     def _create_run_item(self, summary) -> QFrame:
+        L = get_theme()
         is_active = summary.session_id == self._active_id
         bg = L.PRIMARY_LIGHT if is_active else L.SURFACE
         border = L.PRIMARY_BORDER if is_active else L.BORDER_SUBTLE
@@ -413,6 +423,7 @@ class RunHistoryPage(QWidget):
         self._refresh_info_panel(detail, diagnostics)
 
     def _refresh_info_panel(self, detail, diagnostics) -> None:
+        L = get_theme()
         summary = detail.summary
         health = detail.health
 
@@ -491,6 +502,7 @@ class RunHistoryPage(QWidget):
         self._events_layout.addStretch()
 
     def _event_item(self, ev: dict) -> QFrame:
+        L = get_theme()
         ev_type = str(ev.get("type", "-"))
         stage = str(ev.get("stage", "-"))
         message = str(ev.get("message", ""))[:80]
@@ -565,6 +577,7 @@ class RunHistoryPage(QWidget):
         self._messages_layout.addStretch()
 
     def _message_item(self, msg: dict) -> QFrame:
+        L = get_theme()
         role = str(msg.get("role", "-"))
         content = str(msg.get("content", ""))[:120]
 
@@ -600,6 +613,7 @@ class RunHistoryPage(QWidget):
         return frame
 
     def _refresh_diagnostics_tab(self, diagnostics) -> None:
+        L = get_theme()
         while self._diagnostics_layout.count():
             child = self._diagnostics_layout.takeAt(0)
             if child.widget():
@@ -650,6 +664,7 @@ class RunHistoryPage(QWidget):
         self._info_container.addStretch()
 
     def _info_field(self, label_text: str, value_text: str) -> QFrame:
+        L = get_theme()
         field = QFrame()
         field.setStyleSheet(
             f"QFrame {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER_SUBTLE}; "
@@ -673,6 +688,72 @@ class RunHistoryPage(QWidget):
         layout.addWidget(value)
 
         return field
+
+    def apply_theme(self) -> None:
+        """Re-apply styles using current theme tokens."""
+        L = get_theme()
+        self.setStyleSheet(f"background-color: {L.CANVAS};")
+        self._scroll.setStyleSheet(f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}")
+        self._content_widget.setStyleSheet(f"background-color: {L.CANVAS};")
+        self._header.apply_theme()
+
+        # List panel
+        self._list_panel.setStyleSheet(
+            f"QFrame {{ background-color: {L.SURFACE_ALT}; border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.PANEL}px; }}"
+        )
+        self._list_title_label.setStyleSheet(
+            f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
+        )
+        self._empty_label.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED};"
+        )
+
+        # Preview panel
+        self._preview_panel.setStyleSheet(_card_style(L))
+        self._preview_title.setStyleSheet(
+            f"font-size: {FontSize.PANEL_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
+        )
+        self._preview_badge.apply_theme()
+        self._preview_area.setStyleSheet(
+            f"QTextEdit {{ background-color: {L.SURFACE}; color: {L.TEXT_PRIMARY}; "
+            f"border: 1px solid {L.BORDER_SUBTLE}; border-radius: {Radius.PANEL}px; "
+            f"padding: {Spacing.MD}px; font-size: {FontSize.BODY}px; }}"
+        )
+        self._open_editor_btn.setStyleSheet(
+            f"QPushButton {{ background-color: {L.PRIMARY}; color: {L.TEXT_ON_PRIMARY}; "
+            f"border: none; border-radius: {Radius.BUTTON}px; "
+            f"padding: 0 {Spacing.MD}px; "
+            f"font-size: {FontSize.SECONDARY}px; font-weight: 600; }} "
+            f"QPushButton:disabled {{ background-color: {L.SURFACE_ALT}; color: {L.TEXT_MUTED}; "
+            f"border: 1px dashed {L.BORDER}; }} "
+            f"QPushButton:hover:enabled {{ background-color: {L.PRIMARY_HOVER}; }}"
+        )
+
+        # Info panel
+        self._info_panel.setStyleSheet(_card_style(L))
+        self._info_title_label.setStyleSheet(
+            f"font-size: {FontSize.CARD_TITLE}px; color: {L.TEXT_PRIMARY}; font-weight: 700;"
+        )
+        self._info_empty.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED};"
+        )
+        self._events_empty.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED};"
+        )
+        self._messages_empty.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED};"
+        )
+        self._diagnostics_empty.setStyleSheet(
+            f"font-size: {FontSize.SECONDARY}px; color: {L.TEXT_MUTED};"
+        )
+
+        # Re-populate run list and info panel if loaded
+        if self._runs:
+            self._load_runs()
+            if self._active_id:
+                # Re-select to refresh info panels
+                self._select_run(self._active_id)
 
     @staticmethod
     def _format_time(iso_time: str) -> str:

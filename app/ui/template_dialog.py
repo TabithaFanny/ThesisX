@@ -62,6 +62,9 @@ class TemplateDialog(QDialog):
                 self._selected_content = content
                 self.preview.setPlainText(content[:500] + ("..." if len(content) > 500 else ""))
             except Exception:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning("Failed to load template %s", filepath, exc_info=True)
                 self._selected_content = ""
                 self.preview.setPlainText("")
 

@@ -17,7 +17,7 @@ from typing import Any
 from PyQt6.QtCore import QThread, pyqtSignal, pyqtSlot, Qt
 from PyQt6.QtGui import QFont, QTextCursor, QColor
 
-from app.ui.design_tokens import FONT_FAMILY, Light as L, FontSize, Radius, Spacing
+from app.ui.design_tokens import FONT_FAMILY, get_theme, ThemeManager, FontSize, Radius, Spacing
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -54,8 +54,10 @@ logger = logging.getLogger(__name__)
 # Stylesheet helpers (all use design tokens)
 # ---------------------------------------------------------------------------
 
-def _card_frame() -> str:
+def _card_frame(L=None) -> str:
     """Card-style QFrame with border and rounded corners."""
+    if L is None:
+        L = get_theme()
     return (
         f"QFrame {{ "
         f"background-color: {L.SURFACE}; "
@@ -66,8 +68,10 @@ def _card_frame() -> str:
     )
 
 
-def _group_box_style() -> str:
+def _group_box_style(L=None) -> str:
     """GroupBox styled as a card with visible border."""
+    if L is None:
+        L = get_theme()
     return (
         f"QGroupBox {{ "
         f"background-color: {L.SURFACE}; "
@@ -90,8 +94,10 @@ def _group_box_style() -> str:
     )
 
 
-def _primary_btn_style() -> str:
+def _primary_btn_style(L=None) -> str:
     """Primary action button (blue)."""
+    if L is None:
+        L = get_theme()
     return (
         f"QPushButton {{ "
         f"background-color: {L.PRIMARY}; "
@@ -110,8 +116,10 @@ def _primary_btn_style() -> str:
     )
 
 
-def _secondary_btn_style() -> str:
+def _secondary_btn_style(L=None) -> str:
     """Secondary action button (outlined)."""
+    if L is None:
+        L = get_theme()
     return (
         f"QPushButton {{ "
         f"background-color: {L.SURFACE}; "
@@ -129,8 +137,10 @@ def _secondary_btn_style() -> str:
     )
 
 
-def _danger_btn_style() -> str:
+def _danger_btn_style(L=None) -> str:
     """Danger/cancel button."""
+    if L is None:
+        L = get_theme()
     return (
         f"QPushButton {{ "
         f"background-color: {L.SURFACE}; "
@@ -146,15 +156,19 @@ def _danger_btn_style() -> str:
     )
 
 
-def _label_style(size: int = FontSize.BODY, color: str = "", weight: str = "") -> str:
+def _label_style(size: int = FontSize.BODY, color: str = "", weight: str = "", L=None) -> str:
     """Label style helper."""
+    if L is None:
+        L = get_theme()
     c = color or L.TEXT_PRIMARY
     w = f"font-weight: {weight};" if weight else ""
     return f"font-size: {size}px; color: {c}; {w}"
 
 
-def _input_style() -> str:
+def _input_style(L=None) -> str:
     """Text input / combo style."""
+    if L is None:
+        L = get_theme()
     return (
         f"QTextEdit, QComboBox, QDoubleSpinBox {{ "
         f"background-color: {L.SURFACE}; "
@@ -170,8 +184,10 @@ def _input_style() -> str:
     )
 
 
-def _log_style() -> str:
+def _log_style(L=None) -> str:
     """Log area style."""
+    if L is None:
+        L = get_theme()
     mono = "Menlo" if sys.platform == "darwin" else "Consolas"
     return (
         f"QTextEdit {{ "
@@ -187,8 +203,10 @@ def _log_style() -> str:
     )
 
 
-def _progress_bar_style() -> str:
+def _progress_bar_style(L=None) -> str:
     """Progress bar style."""
+    if L is None:
+        L = get_theme()
     return (
         f"QProgressBar {{ "
         f"border: 1px solid {L.BORDER}; "
@@ -337,41 +355,44 @@ class AgentTeamDialog(QWidget):
 
         self.setWindowTitle("AI 论文初稿助手")
         self.setMinimumSize(860, 640)
-        self.setStyleSheet(f"background-color: {L.CANVAS};")
         self._init_ui()
         self._load_saved_config()
+        ThemeManager.instance().theme_changed.connect(self.apply_theme)
 
     # ------------------------------------------------------------------
     # UI setup
     # ------------------------------------------------------------------
 
     def _init_ui(self) -> None:
+        L = get_theme()
+        self.setStyleSheet(f"background-color: {L.CANVAS};")
+
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
         # Header bar
-        header = QFrame()
-        header.setStyleSheet(
+        self._header_frame = QFrame()
+        self._header_frame.setStyleSheet(
             f"QFrame {{ "
             f"background-color: {L.SURFACE}; "
             f"border-bottom: 1px solid {L.BORDER}; "
             f"padding: {Spacing.MD}px {Spacing.LG}px; "
             f"}}"
         )
-        header_layout = QHBoxLayout(header)
+        header_layout = QHBoxLayout(self._header_frame)
         header_layout.setContentsMargins(Spacing.LG, Spacing.MD, Spacing.LG, Spacing.MD)
 
-        title = QLabel("📝 AI 论文初稿助手")
-        title.setStyleSheet(_label_style(FontSize.PANEL_TITLE, L.TEXT_PRIMARY, "bold"))
-        header_layout.addWidget(title)
+        self._title_label = QLabel("\U0001f4dd AI 论文初稿助手")
+        self._title_label.setStyleSheet(_label_style(FontSize.PANEL_TITLE, L.TEXT_PRIMARY, "bold", L=L))
+        header_layout.addWidget(self._title_label)
         header_layout.addStretch()
 
         self._header_info = QLabel("")
-        self._header_info.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY))
+        self._header_info.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, L=L))
         header_layout.addWidget(self._header_info)
 
-        root.addWidget(header)
+        root.addWidget(self._header_frame)
 
         # Content area
         self._stack = QStackedWidget()
@@ -383,10 +404,11 @@ class AgentTeamDialog(QWidget):
 
     def _create_config_page(self) -> QWidget:
         """Stage 0: Configuration page."""
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}")
+        L = get_theme()
+        self._config_scroll = QScrollArea()
+        self._config_scroll.setWidgetResizable(True)
+        self._config_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._config_scroll.setStyleSheet(f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}")
 
         page = QWidget()
         page.setStyleSheet(f"background-color: {L.CANVAS};")
@@ -395,9 +417,9 @@ class AgentTeamDialog(QWidget):
         layout.setSpacing(Spacing.MD)
 
         # --- Topic card ---
-        topic_group = QGroupBox("研究课题")
-        topic_group.setStyleSheet(_group_box_style())
-        topic_layout = QVBoxLayout(topic_group)
+        self._topic_group = QGroupBox("研究课题")
+        self._topic_group.setStyleSheet(_group_box_style(L))
+        topic_layout = QVBoxLayout(self._topic_group)
         topic_layout.setContentsMargins(Spacing.MD, Spacing.LG, Spacing.MD, Spacing.MD)
 
         self._topic_edit = QTextEdit()
@@ -405,28 +427,28 @@ class AgentTeamDialog(QWidget):
             "请输入研究课题，例如：数字政府背景下基层治理能力提升路径研究"
         )
         self._topic_edit.setMaximumHeight(90)
-        self._topic_edit.setStyleSheet(_input_style())
+        self._topic_edit.setStyleSheet(_input_style(L))
         topic_layout.addWidget(self._topic_edit)
 
-        hint = QLabel("请尽量明确研究范围、研究对象和核心问题，以获得更精准的大纲规划。")
-        hint.setStyleSheet(_label_style(FontSize.CAPTION, L.TEXT_SECONDARY))
-        hint.setWordWrap(True)
-        topic_layout.addWidget(hint)
-        layout.addWidget(topic_group)
+        self._topic_hint = QLabel("请尽量明确研究范围、研究对象和核心问题，以获得更精准的大纲规划。")
+        self._topic_hint.setStyleSheet(_label_style(FontSize.CAPTION, L.TEXT_SECONDARY, L=L))
+        self._topic_hint.setWordWrap(True)
+        topic_layout.addWidget(self._topic_hint)
+        layout.addWidget(self._topic_group)
 
         # --- Settings card ---
-        settings_group = QGroupBox("生成设置")
-        settings_group.setStyleSheet(_group_box_style())
-        settings_layout = QVBoxLayout(settings_group)
+        self._settings_group = QGroupBox("生成设置")
+        self._settings_group.setStyleSheet(_group_box_style(L))
+        settings_layout = QVBoxLayout(self._settings_group)
         settings_layout.setContentsMargins(Spacing.MD, Spacing.LG, Spacing.MD, Spacing.MD)
         settings_layout.setSpacing(Spacing.SM)
 
         # Row 1: Generation type + Journal
         row1 = QHBoxLayout()
         row1.setSpacing(Spacing.SM)
-        lbl1 = QLabel("生成类型")
-        lbl1.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, "bold"))
-        row1.addWidget(lbl1)
+        self._config_lbl1 = QLabel("生成类型")
+        self._config_lbl1.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, "bold", L=L))
+        row1.addWidget(self._config_lbl1)
         self._type_combo = QComboBox()
         self._type_combo.addItems([
             "论文初稿",
@@ -434,39 +456,39 @@ class AgentTeamDialog(QWidget):
             "开题报告（V2 开发中）",
             "研究计划（V2 开发中）",
         ])
-        self._type_combo.setStyleSheet(_input_style())
+        self._type_combo.setStyleSheet(_input_style(L))
         self._type_combo.model().item(1).setEnabled(False)
         self._type_combo.model().item(2).setEnabled(False)
         self._type_combo.model().item(3).setEnabled(False)
         row1.addWidget(self._type_combo, 1)
 
-        lbl2 = QLabel("目标风格")
-        lbl2.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, "bold"))
-        row1.addWidget(lbl2)
+        self._config_lbl2 = QLabel("目标风格")
+        self._config_lbl2.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, "bold", L=L))
+        row1.addWidget(self._config_lbl2)
         self._journal_combo = QComboBox()
         self._journal_combo.addItems(["中文核心", "CSSCI", "本科课程论文", "硕士论文风", "英文APA"])
-        self._journal_combo.setStyleSheet(_input_style())
+        self._journal_combo.setStyleSheet(_input_style(L))
         row1.addWidget(self._journal_combo, 1)
         settings_layout.addLayout(row1)
 
         # Row 2: Run mode + Literature mode
         row2 = QHBoxLayout()
         row2.setSpacing(Spacing.SM)
-        lbl3 = QLabel("运行模式")
-        lbl3.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, "bold"))
-        row2.addWidget(lbl3)
+        self._config_lbl3 = QLabel("运行模式")
+        self._config_lbl3.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, "bold", L=L))
+        row2.addWidget(self._config_lbl3)
         self._mode_combo = QComboBox()
         self._mode_combo.addItems(["Mock 演示", "Real 模式"])
-        self._mode_combo.setStyleSheet(_input_style())
+        self._mode_combo.setStyleSheet(_input_style(L))
         self._mode_combo.currentIndexChanged.connect(self._on_mode_changed)
         row2.addWidget(self._mode_combo, 1)
 
-        lbl4 = QLabel("文献模式")
-        lbl4.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, "bold"))
-        row2.addWidget(lbl4)
+        self._config_lbl4 = QLabel("文献模式")
+        self._config_lbl4.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, "bold", L=L))
+        row2.addWidget(self._config_lbl4)
         self._lit_combo = QComboBox()
         self._lit_combo.addItems(["示例文献结构", "真实文献检索（V5）", "用户文献库（V3）"])
-        self._lit_combo.setStyleSheet(_input_style())
+        self._lit_combo.setStyleSheet(_input_style(L))
         self._lit_combo.model().item(1).setEnabled(False)
         self._lit_combo.model().item(2).setEnabled(False)
         row2.addWidget(self._lit_combo, 1)
@@ -475,14 +497,14 @@ class AgentTeamDialog(QWidget):
         # Row 3: Budget + Auto polish
         row3 = QHBoxLayout()
         row3.setSpacing(Spacing.SM)
-        lbl5 = QLabel("预算上限")
-        lbl5.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, "bold"))
-        row3.addWidget(lbl5)
+        self._config_lbl5 = QLabel("预算上限")
+        self._config_lbl5.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, "bold", L=L))
+        row3.addWidget(self._config_lbl5)
         self._budget_spin = QDoubleSpinBox()
         self._budget_spin.setRange(0.0, 1000.0)
         self._budget_spin.setValue(self._config.get("agent_team_default_budget_cny", 10.0))
         self._budget_spin.setPrefix("¥ ")
-        self._budget_spin.setStyleSheet(_input_style())
+        self._budget_spin.setStyleSheet(_input_style(L))
         row3.addWidget(self._budget_spin)
 
         self._polish_check = QCheckBox("自动润色")
@@ -493,12 +515,12 @@ class AgentTeamDialog(QWidget):
         row3.addStretch()
         settings_layout.addLayout(row3)
 
-        layout.addWidget(settings_group)
+        layout.addWidget(self._settings_group)
 
         # --- Agent Team path card ---
-        path_group = QGroupBox("Agent Team 路径")
-        path_group.setStyleSheet(_group_box_style())
-        path_layout = QHBoxLayout(path_group)
+        self._path_group = QGroupBox("Agent Team 路径")
+        self._path_group.setStyleSheet(_group_box_style(L))
+        path_layout = QHBoxLayout(self._path_group)
         path_layout.setContentsMargins(Spacing.MD, Spacing.LG, Spacing.MD, Spacing.MD)
         path_layout.setSpacing(Spacing.SM)
 
@@ -513,18 +535,18 @@ class AgentTeamDialog(QWidget):
         )
         path_layout.addWidget(self._path_label, 1)
 
-        browse_btn = QPushButton("浏览...")
-        browse_btn.setStyleSheet(_secondary_btn_style())
-        browse_btn.clicked.connect(self._browse_agent_path)
-        path_layout.addWidget(browse_btn)
-        layout.addWidget(path_group)
+        self._browse_btn = QPushButton("浏览...")
+        self._browse_btn.setStyleSheet(_secondary_btn_style(L))
+        self._browse_btn.clicked.connect(self._browse_agent_path)
+        path_layout.addWidget(self._browse_btn)
+        layout.addWidget(self._path_group)
 
         # --- Config test ---
-        test_btn = QPushButton("检测配置")
-        test_btn.setStyleSheet(_secondary_btn_style())
-        test_btn.clicked.connect(self._test_configuration)
-        test_btn.setToolTip("检测 Agent Team 路径、API Key、Model 等配置是否就绪")
-        layout.addWidget(test_btn)
+        self._test_btn = QPushButton("检测配置")
+        self._test_btn.setStyleSheet(_secondary_btn_style(L))
+        self._test_btn.clicked.connect(self._test_configuration)
+        self._test_btn.setToolTip("检测 Agent Team 路径、API Key、Model 等配置是否就绪")
+        layout.addWidget(self._test_btn)
 
         # --- Mode info ---
         self._mode_info = QLabel()
@@ -540,37 +562,38 @@ class AgentTeamDialog(QWidget):
         layout.addWidget(self._mode_info)
 
         # --- Compliance ---
-        compliance = QLabel(_COMPLIANCE_TEXT)
-        compliance.setWordWrap(True)
-        compliance.setStyleSheet(
+        self._compliance_label = QLabel(_COMPLIANCE_TEXT)
+        self._compliance_label.setWordWrap(True)
+        self._compliance_label.setStyleSheet(
             f"color: {L.TEXT_MUTED}; font-size: {FontSize.CAPTION}px; "
             f"padding: {Spacing.SM}px {Spacing.MD}px;"
         )
-        layout.addWidget(compliance)
+        layout.addWidget(self._compliance_label)
 
         # --- Buttons ---
         btn_layout = QHBoxLayout()
         btn_layout.setContentsMargins(0, Spacing.SM, 0, 0)
         btn_layout.addStretch()
 
-        close_btn = QPushButton("关闭")
-        close_btn.setStyleSheet(_secondary_btn_style())
-        close_btn.clicked.connect(self.close)
-        btn_layout.addWidget(close_btn)
+        self._close_btn = QPushButton("关闭")
+        self._close_btn.setStyleSheet(_secondary_btn_style(L))
+        self._close_btn.clicked.connect(self.close)
+        btn_layout.addWidget(self._close_btn)
 
         self._start_btn = QPushButton("开始生成")
-        self._start_btn.setStyleSheet(_primary_btn_style())
+        self._start_btn.setStyleSheet(_primary_btn_style(L))
         self._start_btn.setDefault(True)
         self._start_btn.clicked.connect(self._start_generation)
         btn_layout.addWidget(self._start_btn)
 
         layout.addLayout(btn_layout)
 
-        scroll.setWidget(page)
-        return scroll
+        self._config_scroll.setWidget(page)
+        return self._config_scroll
 
     def _create_progress_page(self) -> QWidget:
         """Stage 1: Progress page."""
+        L = get_theme()
         page = QWidget()
         page.setStyleSheet(f"background-color: {L.CANVAS};")
         layout = QVBoxLayout(page)
@@ -582,18 +605,19 @@ class AgentTeamDialog(QWidget):
         self._progress_bar.setRange(0, 100)
         self._progress_bar.setValue(0)
         self._progress_bar.setFormat("进度 %p%")
-        self._progress_bar.setStyleSheet(_progress_bar_style())
+        self._progress_bar.setStyleSheet(_progress_bar_style(L))
         layout.addWidget(self._progress_bar)
 
         # Agent status card
-        stages_group = QGroupBox("流水线进度")
-        stages_group.setStyleSheet(_group_box_style())
-        stages_layout = QVBoxLayout(stages_group)
+        self._stages_group = QGroupBox("流水线进度")
+        self._stages_group.setStyleSheet(_group_box_style(L))
+        stages_layout = QVBoxLayout(self._stages_group)
         stages_layout.setContentsMargins(Spacing.MD, Spacing.LG, Spacing.MD, Spacing.MD)
         stages_layout.setSpacing(Spacing.SM)
 
         self._stage_labels: dict[str, QLabel] = {}
         self._stage_badges: dict[str, QLabel] = {}
+        self._stage_name_labels: dict[str, QLabel] = {}
         for agent_key in ["architect", "advisor", "researcher", "writer", "reviewer", "polisher"]:
             row = QHBoxLayout()
             row.setSpacing(Spacing.SM)
@@ -605,6 +629,7 @@ class AgentTeamDialog(QWidget):
                 f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; font-weight: bold;"
             )
             row.addWidget(name_label)
+            self._stage_name_labels[agent_key] = name_label
 
             # Status badge
             badge = QLabel("等待中")
@@ -622,26 +647,28 @@ class AgentTeamDialog(QWidget):
 
             stages_layout.addLayout(row)
 
-        layout.addWidget(stages_group)
+        layout.addWidget(self._stages_group)
 
         # Cost card
-        cost_group = QGroupBox("费用监控")
-        cost_group.setStyleSheet(_group_box_style())
-        cost_inner = QHBoxLayout(cost_group)
+        self._cost_group = QGroupBox("费用监控")
+        self._cost_group.setStyleSheet(_group_box_style(L))
+        cost_inner = QHBoxLayout(self._cost_group)
         cost_inner.setContentsMargins(Spacing.MD, Spacing.LG, Spacing.MD, Spacing.MD)
 
-        cost_inner.addWidget(QLabel("已产生:"))
+        self._cost_prefix = QLabel("已产生:")
+        cost_inner.addWidget(self._cost_prefix)
         self._cost_label = QLabel("¥ 0.00")
         self._cost_label.setStyleSheet(
             f"font-size: {FontSize.CARD_TITLE}px; font-weight: bold; color: {L.TEXT_PRIMARY};"
         )
         cost_inner.addWidget(self._cost_label)
 
-        sep = QLabel("/")
-        sep.setStyleSheet(f"color: {L.TEXT_MUTED}; font-size: {FontSize.BODY}px;")
-        cost_inner.addWidget(sep)
+        self._cost_sep = QLabel("/")
+        self._cost_sep.setStyleSheet(f"color: {L.TEXT_MUTED}; font-size: {FontSize.BODY}px;")
+        cost_inner.addWidget(self._cost_sep)
 
-        cost_inner.addWidget(QLabel("预算:"))
+        self._cost_budget_prefix = QLabel("预算:")
+        cost_inner.addWidget(self._cost_budget_prefix)
         self._budget_label = QLabel("¥ 0.00")
         self._budget_label.setStyleSheet(
             f"font-size: {FontSize.BODY}px; color: {L.TEXT_SECONDARY};"
@@ -649,26 +676,26 @@ class AgentTeamDialog(QWidget):
         cost_inner.addWidget(self._budget_label)
         cost_inner.addStretch()
 
-        layout.addWidget(cost_group)
+        layout.addWidget(self._cost_group)
 
         # Log card
-        log_group = QGroupBox("运行日志")
-        log_group.setStyleSheet(_group_box_style())
-        log_layout = QVBoxLayout(log_group)
+        self._log_group = QGroupBox("运行日志")
+        self._log_group.setStyleSheet(_group_box_style(L))
+        log_layout = QVBoxLayout(self._log_group)
         log_layout.setContentsMargins(Spacing.MD, Spacing.LG, Spacing.MD, Spacing.MD)
 
         self._log_text = QTextEdit()
         self._log_text.setReadOnly(True)
-        self._log_text.setStyleSheet(_log_style())
+        self._log_text.setStyleSheet(_log_style(L))
         self._log_text.setMinimumHeight(150)
         log_layout.addWidget(self._log_text)
-        layout.addWidget(log_group, 1)
+        layout.addWidget(self._log_group, 1)
 
         # Cancel button
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         self._cancel_btn = QPushButton("取消任务")
-        self._cancel_btn.setStyleSheet(_danger_btn_style())
+        self._cancel_btn.setStyleSheet(_danger_btn_style(L))
         self._cancel_btn.clicked.connect(self._cancel_generation)
         btn_layout.addWidget(self._cancel_btn)
         layout.addLayout(btn_layout)
@@ -677,10 +704,11 @@ class AgentTeamDialog(QWidget):
 
     def _create_result_page(self) -> QWidget:
         """Stage 2: Result page."""
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setStyleSheet(f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}")
+        L = get_theme()
+        self._result_scroll = QScrollArea()
+        self._result_scroll.setWidgetResizable(True)
+        self._result_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._result_scroll.setStyleSheet(f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}")
 
         page = QWidget()
         page.setStyleSheet(f"background-color: {L.CANVAS};")
@@ -689,9 +717,9 @@ class AgentTeamDialog(QWidget):
         layout.setSpacing(Spacing.MD)
 
         # Header card
-        header_card = QFrame()
-        header_card.setStyleSheet(_card_frame())
-        header_layout_inner = QVBoxLayout(header_card)
+        self._result_header_card = QFrame()
+        self._result_header_card.setStyleSheet(_card_frame(L))
+        header_layout_inner = QVBoxLayout(self._result_header_card)
         header_layout_inner.setContentsMargins(Spacing.LG, Spacing.MD, Spacing.LG, Spacing.MD)
 
         self._result_title = QLabel("生成完成")
@@ -705,16 +733,16 @@ class AgentTeamDialog(QWidget):
             f"font-size: {FontSize.BODY}px; color: {L.TEXT_SECONDARY};"
         )
         header_layout_inner.addWidget(self._stats_label)
-        layout.addWidget(header_card)
+        layout.addWidget(self._result_header_card)
 
         # Main content: horizontal split (preview | quality)
         content_row = QHBoxLayout()
         content_row.setSpacing(Spacing.MD)
 
         # Left: Paper preview
-        preview_group = QGroupBox("论文预览（前 5000 字）")
-        preview_group.setStyleSheet(_group_box_style())
-        preview_layout = QVBoxLayout(preview_group)
+        self._preview_group = QGroupBox("论文预览（前 5000 字）")
+        self._preview_group.setStyleSheet(_group_box_style(L))
+        preview_layout = QVBoxLayout(self._preview_group)
         preview_layout.setContentsMargins(Spacing.MD, Spacing.LG, Spacing.MD, Spacing.MD)
 
         self._preview_text = QTextEdit()
@@ -733,16 +761,16 @@ class AgentTeamDialog(QWidget):
         mono_font = FONT_FAMILY.split(",")[0].strip('" ')
         self._preview_text.setFont(QFont(mono_font, FontSize.BODY))
         preview_layout.addWidget(self._preview_text)
-        content_row.addWidget(preview_group, 3)
+        content_row.addWidget(self._preview_group, 3)
 
         # Right: Quality + Compliance sidebar
         right_col = QVBoxLayout()
         right_col.setSpacing(Spacing.MD)
 
         # Quality check card
-        quality_group = QGroupBox("质量检查")
-        quality_group.setStyleSheet(_group_box_style())
-        quality_layout = QVBoxLayout(quality_group)
+        self._quality_group = QGroupBox("质量检查")
+        self._quality_group.setStyleSheet(_group_box_style(L))
+        quality_layout = QVBoxLayout(self._quality_group)
         quality_layout.setContentsMargins(Spacing.MD, Spacing.LG, Spacing.MD, Spacing.MD)
 
         self._quality_text = QTextEdit()
@@ -759,11 +787,11 @@ class AgentTeamDialog(QWidget):
             f"}}"
         )
         quality_layout.addWidget(self._quality_text)
-        right_col.addWidget(quality_group)
+        right_col.addWidget(self._quality_group)
 
         # Compliance card
-        compliance_card = QFrame()
-        compliance_card.setStyleSheet(
+        self._result_compliance_card = QFrame()
+        self._result_compliance_card.setStyleSheet(
             f"QFrame {{ "
             f"background-color: {L.WARNING_BG}; "
             f"border: 1px solid {L.WARNING}; "
@@ -771,14 +799,14 @@ class AgentTeamDialog(QWidget):
             f"padding: {Spacing.SM}px; "
             f"}}"
         )
-        compliance_inner = QVBoxLayout(compliance_card)
+        compliance_inner = QVBoxLayout(self._result_compliance_card)
         compliance_inner.setContentsMargins(Spacing.MD, Spacing.SM, Spacing.MD, Spacing.SM)
 
-        compliance_title = QLabel("合规声明")
-        compliance_title.setStyleSheet(
+        self._result_compliance_title = QLabel("合规声明")
+        self._result_compliance_title.setStyleSheet(
             f"color: {L.WARNING}; font-size: {FontSize.SECONDARY}px; font-weight: bold;"
         )
-        compliance_inner.addWidget(compliance_title)
+        compliance_inner.addWidget(self._result_compliance_title)
 
         self._compliance_label = QLabel()
         self._compliance_label.setWordWrap(True)
@@ -786,7 +814,7 @@ class AgentTeamDialog(QWidget):
             f"color: {L.TEXT_SECONDARY}; font-size: {FontSize.CAPTION}px;"
         )
         compliance_inner.addWidget(self._compliance_label)
-        right_col.addWidget(compliance_card)
+        right_col.addWidget(self._result_compliance_card)
 
         right_col.addStretch()
         content_row.addLayout(right_col, 2)
@@ -798,36 +826,46 @@ class AgentTeamDialog(QWidget):
         btn_layout.setSpacing(Spacing.SM)
 
         self._import_new_btn = QPushButton("导入编辑器（新建）")
-        self._import_new_btn.setStyleSheet(_primary_btn_style())
+        self._import_new_btn.setStyleSheet(_primary_btn_style(L))
         self._import_new_btn.clicked.connect(lambda: self._emit_import("new"))
         btn_layout.addWidget(self._import_new_btn)
 
         self._import_replace_btn = QPushButton("导入编辑器（替换）")
-        self._import_replace_btn.setStyleSheet(_secondary_btn_style())
+        self._import_replace_btn.setStyleSheet(_secondary_btn_style(L))
         self._import_replace_btn.clicked.connect(lambda: self._emit_import("replace"))
         btn_layout.addWidget(self._import_replace_btn)
 
         self._import_append_btn = QPushButton("导入编辑器（追加）")
-        self._import_append_btn.setStyleSheet(_secondary_btn_style())
+        self._import_append_btn.setStyleSheet(_secondary_btn_style(L))
         self._import_append_btn.clicked.connect(lambda: self._emit_import("append"))
         btn_layout.addWidget(self._import_append_btn)
 
+        self._import_sections_btn = QPushButton("按章节插入")
+        self._import_sections_btn.setStyleSheet(_secondary_btn_style(L))
+        self._import_sections_btn.clicked.connect(lambda: self._emit_import("sections"))
+        btn_layout.addWidget(self._import_sections_btn)
+
         btn_layout.addStretch()
 
+        self._copy_full_btn = QPushButton("复制全文")
+        self._copy_full_btn.setStyleSheet(_secondary_btn_style(L))
+        self._copy_full_btn.clicked.connect(self._copy_full_text)
+        btn_layout.addWidget(self._copy_full_btn)
+
         self._regen_btn = QPushButton("重新生成")
-        self._regen_btn.setStyleSheet(_secondary_btn_style())
+        self._regen_btn.setStyleSheet(_secondary_btn_style(L))
         self._regen_btn.clicked.connect(self._restart)
         btn_layout.addWidget(self._regen_btn)
 
-        close_btn = QPushButton("关闭")
-        close_btn.setStyleSheet(_secondary_btn_style())
-        close_btn.clicked.connect(self.close)
-        btn_layout.addWidget(close_btn)
+        self._result_close_btn = QPushButton("关闭")
+        self._result_close_btn.setStyleSheet(_secondary_btn_style(L))
+        self._result_close_btn.clicked.connect(self.close)
+        btn_layout.addWidget(self._result_close_btn)
 
         layout.addLayout(btn_layout)
 
-        scroll.setWidget(page)
-        return scroll
+        self._result_scroll.setWidget(page)
+        return self._result_scroll
 
     # ------------------------------------------------------------------
     # Config persistence
@@ -990,6 +1028,7 @@ class AgentTeamDialog(QWidget):
         )
 
     def _reset_progress(self) -> None:
+        L = get_theme()
         self._progress_bar.setValue(0)
         self._log_text.clear()
         self._log_line_count = 0
@@ -1024,6 +1063,7 @@ class AgentTeamDialog(QWidget):
             self._append_log("[完成] 论文生成完毕")
 
     def _handle_state_event(self, event: PaperEvent) -> None:
+        L = get_theme()
         stage = event.stage
         progress = STAGE_PROGRESS.get(stage, -1)
         if progress >= 0:
@@ -1057,6 +1097,7 @@ class AgentTeamDialog(QWidget):
         pass  # Token stream too verbose for log
 
     def _handle_cost_event(self, event: PaperEvent) -> None:
+        L = get_theme()
         cumulative = event.payload.get("cumulative_cny", 0.0)
         budget = event.payload.get("budget_cap_cny", 0.0)
         self._cost_label.setText(f"¥ {cumulative:.2f}")
@@ -1180,7 +1221,19 @@ class AgentTeamDialog(QWidget):
             QMessageBox.warning(self, "无内容", "没有可导入的论文内容。")
             return
         self.paper_import_requested.emit(self._result_markdown, mode)
-        QMessageBox.information(self, "导入成功", f"论文已{mode}导入编辑器。")
+        mode_labels = {"new": "新建", "replace": "替换", "append": "追加", "sections": "按章节插入"}
+        QMessageBox.information(
+            self, "导入成功",
+            f"论文已{mode_labels.get(mode, mode)}导入编辑器。"
+        )
+
+    def _copy_full_text(self) -> None:
+        """Copy the full paper content to clipboard."""
+        if not self._result_markdown:
+            QMessageBox.warning(self, "无内容", "没有可复制的论文内容。")
+            return
+        QApplication.clipboard().setText(self._result_markdown)
+        QMessageBox.information(self, "已复制", "论文全文已复制到剪贴板。")
 
     # ------------------------------------------------------------------
     # Cancel & restart
@@ -1195,6 +1248,146 @@ class AgentTeamDialog(QWidget):
     def _restart(self) -> None:
         self._stack.setCurrentIndex(0)
         self._header_info.setText("")
+
+    # ------------------------------------------------------------------
+    # Theme
+    # ------------------------------------------------------------------
+
+    def apply_theme(self) -> None:
+        """Re-apply styles using current theme tokens."""
+        L = get_theme()
+        self.setStyleSheet(f"background-color: {L.CANVAS};")
+
+        # Header
+        self._header_frame.setStyleSheet(
+            f"QFrame {{ "
+            f"background-color: {L.SURFACE}; "
+            f"border-bottom: 1px solid {L.BORDER}; "
+            f"padding: {Spacing.MD}px {Spacing.LG}px; "
+            f"}}"
+        )
+        self._title_label.setStyleSheet(_label_style(FontSize.PANEL_TITLE, L.TEXT_PRIMARY, "bold", L=L))
+        self._header_info.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, L=L))
+
+        self._stack.setStyleSheet(f"background-color: {L.CANVAS};")
+
+        # Config page
+        self._config_scroll.setStyleSheet(f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}")
+        self._topic_group.setStyleSheet(_group_box_style(L))
+        self._topic_edit.setStyleSheet(_input_style(L))
+        self._topic_hint.setStyleSheet(_label_style(FontSize.CAPTION, L.TEXT_SECONDARY, L=L))
+        self._settings_group.setStyleSheet(_group_box_style(L))
+        for lbl in [self._config_lbl1, self._config_lbl2, self._config_lbl3, self._config_lbl4, self._config_lbl5]:
+            lbl.setStyleSheet(_label_style(FontSize.SECONDARY, L.TEXT_SECONDARY, "bold", L=L))
+        self._type_combo.setStyleSheet(_input_style(L))
+        self._journal_combo.setStyleSheet(_input_style(L))
+        self._mode_combo.setStyleSheet(_input_style(L))
+        self._lit_combo.setStyleSheet(_input_style(L))
+        self._budget_spin.setStyleSheet(_input_style(L))
+        self._polish_check.setStyleSheet(
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY};"
+        )
+        self._path_group.setStyleSheet(_group_box_style(L))
+        self._path_label.setStyleSheet(
+            f"color: {L.TEXT_SECONDARY}; font-size: {FontSize.BODY}px; "
+            f"padding: {Spacing.SM}px; "
+            f"background-color: {L.SURFACE_ALT}; "
+            f"border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.INPUT}px;"
+        )
+        self._browse_btn.setStyleSheet(_secondary_btn_style(L))
+        self._test_btn.setStyleSheet(_secondary_btn_style(L))
+        self._mode_info.setStyleSheet(
+            f"color: {L.TEXT_SECONDARY}; font-size: {FontSize.SECONDARY}px; "
+            f"padding: {Spacing.SM}px {Spacing.MD}px; "
+            f"background-color: {L.PRIMARY_LIGHT}; "
+            f"border: 1px solid {L.PRIMARY_BORDER}; "
+            f"border-radius: {Radius.INPUT}px;"
+        )
+        self._compliance_label.setStyleSheet(
+            f"color: {L.TEXT_MUTED}; font-size: {FontSize.CAPTION}px; "
+            f"padding: {Spacing.SM}px {Spacing.MD}px;"
+        )
+        self._close_btn.setStyleSheet(_secondary_btn_style(L))
+        self._start_btn.setStyleSheet(_primary_btn_style(L))
+
+        # Progress page
+        self._progress_bar.setStyleSheet(_progress_bar_style(L))
+        self._stages_group.setStyleSheet(_group_box_style(L))
+        for agent_key in self._stage_name_labels:
+            self._stage_name_labels[agent_key].setStyleSheet(
+                f"font-size: {FontSize.BODY}px; color: {L.TEXT_PRIMARY}; font-weight: bold;"
+            )
+        for agent_key in self._stage_badges:
+            self._stage_badges[agent_key].setStyleSheet(
+                _status_badge(self._stage_badges[agent_key].text(), L.TEXT_MUTED, L.SURFACE_ALT)
+            )
+        for agent_key in self._stage_labels:
+            self._stage_labels[agent_key].setStyleSheet(
+                f"color: {L.TEXT_SECONDARY}; font-size: {FontSize.SECONDARY}px;"
+            )
+        self._cost_group.setStyleSheet(_group_box_style(L))
+        self._cost_sep.setStyleSheet(f"color: {L.TEXT_MUTED}; font-size: {FontSize.BODY}px;")
+        self._budget_label.setStyleSheet(
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_SECONDARY};"
+        )
+        self._log_group.setStyleSheet(_group_box_style(L))
+        self._log_text.setStyleSheet(_log_style(L))
+        self._cancel_btn.setStyleSheet(_danger_btn_style(L))
+
+        # Result page
+        self._result_scroll.setStyleSheet(f"QScrollArea {{ background-color: {L.CANVAS}; border: none; }}")
+        self._result_header_card.setStyleSheet(_card_frame(L))
+        self._result_title.setStyleSheet(
+            f"font-size: {FontSize.PANEL_TITLE}px; font-weight: bold; color: {L.TEXT_PRIMARY};"
+        )
+        self._stats_label.setStyleSheet(
+            f"font-size: {FontSize.BODY}px; color: {L.TEXT_SECONDARY};"
+        )
+        self._preview_group.setStyleSheet(_group_box_style(L))
+        self._preview_text.setStyleSheet(
+            f"QTextEdit {{ "
+            f"background-color: {L.SURFACE}; "
+            f"border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.INPUT}px; "
+            f"padding: {Spacing.MD}px; "
+            f"font-size: {FontSize.BODY}px; "
+            f"color: {L.TEXT_PRIMARY}; "
+            f"line-height: 1.6; "
+            f"}}"
+        )
+        self._quality_group.setStyleSheet(_group_box_style(L))
+        self._quality_text.setStyleSheet(
+            f"QTextEdit {{ "
+            f"background-color: {L.SURFACE_ALT}; "
+            f"border: 1px solid {L.BORDER_SUBTLE}; "
+            f"border-radius: {Radius.INPUT}px; "
+            f"padding: {Spacing.SM}px; "
+            f"font-size: {FontSize.SECONDARY}px; "
+            f"color: {L.TEXT_PRIMARY}; "
+            f"}}"
+        )
+        self._result_compliance_card.setStyleSheet(
+            f"QFrame {{ "
+            f"background-color: {L.WARNING_BG}; "
+            f"border: 1px solid {L.WARNING}; "
+            f"border-radius: {Radius.INPUT}px; "
+            f"padding: {Spacing.SM}px; "
+            f"}}"
+        )
+        self._result_compliance_title.setStyleSheet(
+            f"color: {L.WARNING}; font-size: {FontSize.SECONDARY}px; font-weight: bold;"
+        )
+        self._compliance_label.setStyleSheet(
+            f"color: {L.TEXT_SECONDARY}; font-size: {FontSize.CAPTION}px;"
+        )
+        self._import_new_btn.setStyleSheet(_primary_btn_style(L))
+        self._import_replace_btn.setStyleSheet(_secondary_btn_style(L))
+        self._import_append_btn.setStyleSheet(_secondary_btn_style(L))
+        self._import_sections_btn.setStyleSheet(_secondary_btn_style(L))
+        self._copy_full_btn.setStyleSheet(_secondary_btn_style(L))
+        self._regen_btn.setStyleSheet(_secondary_btn_style(L))
+        self._result_close_btn.setStyleSheet(_secondary_btn_style(L))
 
     # ------------------------------------------------------------------
     # Cleanup
