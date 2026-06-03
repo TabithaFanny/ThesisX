@@ -1,0 +1,18 @@
+{
+  "high_fidelity": {
+    "pages": 18,
+    "components": 15,
+    "description": "页面级 SVG 已包含真实标题、导航、卡片、表格、状态标签、按钮、详情区与 preview/coming soon 边界。"
+  },
+  "structured_reference": {
+    "runtime": 5,
+    "providers": 3,
+    "knowledge": 5,
+    "description": "技术链路 SVG 是架构级高保真流程图，不是具体 UI 页面截图。"
+  },
+  "known_limits": [
+    "SVG 为静态母版，不包含真实交互代码。",
+    "未接真实链路的功能均标注 preview / V2 / V3 / 未接入真实功能。",
+    "部分未来页面是最终产品蓝图母版，实际实现仍需按 Vision 分阶段推进。"
+  ]
+}
