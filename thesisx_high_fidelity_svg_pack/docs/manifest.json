@@ -1,0 +1,308 @@
+[
+  {
+    "file": "pages/page_01_workspace_home.svg",
+    "type": "page",
+    "target_frontend_file": "app/ui/pages/workspace_home.py",
+    "feature_status": "preview/mock",
+    "api_dependencies": [
+      "UI mock data",
+      "design_tokens"
+    ],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "必须保留 preview / coming soon 边界，不得把未接链路画成真实功能。"
+  },
+  {
+    "file": "pages/page_02_main_editor.svg",
+    "type": "page",
+    "target_frontend_file": "app/ui/main_window.py + preview_widget.py + toolbar.py",
+    "feature_status": "real",
+    "api_dependencies": [
+      "UI mock data",
+      "design_tokens"
+    ],
+    "is_real_function": true,
+    "is_mock_preview": false,
+    "notes": "必须保留 preview / coming soon 边界，不得把未接链路画成真实功能。"
+  },
+  {
+    "file": "components/component_agent_chat_panel.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_app_shell.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_buttons.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_chart_preview.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_form_section.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_knowledge_item.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_literature_row.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_page_header.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_provider_card.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_run_summary_card.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_sidebar_nav.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_skill_cards.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_status_badges.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_theory_match_card.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "components/component_version_diff_card.svg",
+    "type": "components",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "runtime/runtime_diagnostics_pipeline.svg",
+    "type": "runtime",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "runtime/runtime_event_flow.svg",
+    "type": "runtime",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "runtime/runtime_history_store.svg",
+    "type": "runtime",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "runtime/runtime_real_gate.svg",
+    "type": "runtime",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "runtime/runtime_session_lifecycle.svg",
+    "type": "runtime",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "providers/provider_agent_team_contract.svg",
+    "type": "providers",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "providers/provider_local_cli_discovery.svg",
+    "type": "providers",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "providers/provider_remote_api_profiles.svg",
+    "type": "providers",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "knowledge/evidence_pack_flow.svg",
+    "type": "knowledge",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "knowledge/knowledge_base_architecture.svg",
+    "type": "knowledge",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "knowledge/knowledge_ingestion_flow.svg",
+    "type": "knowledge",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "knowledge/research_question_to_theory.svg",
+    "type": "knowledge",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  },
+  {
+    "file": "knowledge/theory_matcher_flow.svg",
+    "type": "knowledge",
+    "target_frontend_file": "component/spec/reference",
+    "feature_status": "alignment reference",
+    "api_dependencies": [],
+    "is_real_function": false,
+    "is_mock_preview": true,
+    "notes": "用于前端构建对齐、状态拆分和接口映射。"
+  }
+]
