@@ -1,0 +1,46 @@
+{
+  "package": "ThesisX final product documentation pack",
+  "generated": "2026-05-03",
+  "files": [
+    {
+      "path": "docs/00_PRODUCT/PRODUCT_BLUEPRINT.md",
+      "purpose": "Final product definition and product boundary"
+    },
+    {
+      "path": "docs/00_PRODUCT/PRODUCT_ROADMAP.md",
+      "purpose": "Vision roadmap from current state to final beta"
+    },
+    {
+      "path": "docs/01_PRD/PRD_OVERVIEW.md",
+      "purpose": "PRD overview and feature scope"
+    },
+    {
+      "path": "docs/02_TECHNICAL/TECHNICAL_ARCHITECTURE.md",
+      "purpose": "Layered architecture and technical stack"
+    },
+    {
+      "path": "docs/02_TECHNICAL/DATA_MODEL.md",
+      "purpose": "SQLite and domain data model"
+    },
+    {
+      "path": "docs/01_PRD/PRD_KNOWLEDGE_BASE.md",
+      "purpose": "Knowledge Base PRD"
+    },
+    {
+      "path": "docs/04_FRONTEND/FRONTEND_INTERFACE_MAPPING.md",
+      "purpose": "Frontend page to service/API mapping"
+    },
+    {
+      "path": "docs/03_API/API_KNOWLEDGE_STORE.md",
+      "purpose": "Internal KnowledgeStore API contract"
+    },
+    {
+      "path": "docs/06_AGENT/AGENT_VISION_ROADMAP.md",
+      "purpose": "Agent development roadmap"
+    },
+    {
+      "path": "docs/06_AGENT/AGENT_EXECUTION_RULES.md",
+      "purpose": "Agent execution safety and workflow rules"
+    }
+  ]
+}
