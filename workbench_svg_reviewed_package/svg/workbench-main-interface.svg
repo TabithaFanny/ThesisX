@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+<defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.08"/></filter></defs>
+<rect x="0" y="0" width="1920" height="1080" rx="0" fill="#f8fafc" stroke="none" stroke-width="1" />
+<rect x="0" y="0" width="1920" height="68" rx="0" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<rect x="28" y="18" width="36" height="36" rx="10" fill="#1e40af" stroke="none" stroke-width="1" />
+<text x="46" y="43" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">✦</text>
+<text x="78" y="43" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700" fill="#0f172a" text-anchor="start">AI PPT Generator</text>
+<rect x="270" y="20" width="60" height="28" rx="14.0" fill="#dcfce7" stroke="none" stroke-width="1" /><text x="300.0" y="39.0" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#16a34a" text-anchor="middle">Real</text>
+<text x="420" y="42" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="600" fill="#0f172a" text-anchor="start">项目：社区治理 AI 平台路演</text>
+<text x="708" y="42" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="400" fill="#64748b" text-anchor="start">参考：blue-template.pptx · 18 页</text>
+<text x="990" y="42" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="400" fill="#64748b" text-anchor="start">新稿：12 页</text>
+<text x="1120" y="42" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#16a34a" text-anchor="start">状态：已保存</text>
+<rect x="1610" y="18" width="118" height="34" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="1669" y="40" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#334155" text-anchor="middle">项目设置</text>
+<rect x="1748" y="18" width="132" height="34" rx="10" fill="#1e40af" stroke="none" stroke-width="1" />
+<text x="1814" y="40" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">导出 PPTX</text>
+<g filter="url(#shadow)"><rect x="24" y="92" width="230" height="940" rx="18" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" /></g>
+<text x="42" y="124" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#0f172a" text-anchor="start">左一：原 PPT 页面</text>
+<line x1="42" y1="140" x2="236" y2="140" stroke="#e2e8f0" stroke-width="1"/>
+<g filter="url(#shadow)"><rect x="274" y="92" width="300" height="940" rx="18" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" /></g>
+<text x="292" y="124" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#0f172a" text-anchor="start">左二：原页 Prompt</text>
+<line x1="292" y1="140" x2="556" y2="140" stroke="#e2e8f0" stroke-width="1"/>
+<g filter="url(#shadow)"><rect x="594" y="92" width="460" height="940" rx="18" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" /></g>
+<text x="612" y="124" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#0f172a" text-anchor="start">中间：AI PPT 助手</text>
+<line x1="612" y1="140" x2="1036" y2="140" stroke="#e2e8f0" stroke-width="1"/>
+<g filter="url(#shadow)"><rect x="1074" y="92" width="340" height="940" rx="18" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" /></g>
+<text x="1092" y="124" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#0f172a" text-anchor="start">右一：新页 Prompt</text>
+<line x1="1092" y1="140" x2="1396" y2="140" stroke="#e2e8f0" stroke-width="1"/>
+<g filter="url(#shadow)"><rect x="1434" y="92" width="462" height="940" rx="18" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" /></g>
+<text x="1452" y="124" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#0f172a" text-anchor="start">右二：生成结果 / 微调</text>
+<line x1="1452" y1="140" x2="1878" y2="140" stroke="#e2e8f0" stroke-width="1"/>
+<rect x="42" y="158" width="194" height="88" rx="14" fill="#eff6ff" stroke="#1e40af" stroke-width="2" />
+<text x="59" y="180" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#1e40af" text-anchor="start">上传 / 更换参考 PPT</text>
+<text x="59" y="208" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a" text-anchor="start">blue-template.pptx</text>
+<text x="59" y="230" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">18 页 · 已完成反推</text>
+<rect x="42" y="270" width="194" height="82" rx="10" fill="#dbeafe" stroke="#1e40af" stroke-width="2" />
+<text x="58" y="294" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" fill="#1e40af" text-anchor="start">01</text>
+<rect x="94" y="286" width="96" height="54" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="142" y="318" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#64748b" text-anchor="middle">16:9</text>
+<text x="202" y="312" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a" text-anchor="start">封面</text>
+<rect x="42" y="368" width="194" height="82" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="58" y="392" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" fill="#64748b" text-anchor="start">02</text>
+<rect x="94" y="384" width="96" height="54" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="142" y="416" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#64748b" text-anchor="middle">16:9</text>
+<text x="202" y="410" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a" text-anchor="start">目录</text>
+<rect x="42" y="466" width="194" height="82" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="58" y="490" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" fill="#64748b" text-anchor="start">03</text>
+<rect x="94" y="482" width="96" height="54" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="142" y="514" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#64748b" text-anchor="middle">16:9</text>
+<text x="202" y="508" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a" text-anchor="start">痛点</text>
+<rect x="42" y="564" width="194" height="82" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="58" y="588" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" fill="#64748b" text-anchor="start">04</text>
+<rect x="94" y="580" width="96" height="54" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="142" y="612" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#64748b" text-anchor="middle">16:9</text>
+<text x="202" y="606" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a" text-anchor="start">方案</text>
+<rect x="42" y="662" width="194" height="82" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="58" y="686" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" fill="#64748b" text-anchor="start">05</text>
+<rect x="94" y="678" width="96" height="54" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="142" y="710" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#64748b" text-anchor="middle">16:9</text>
+<text x="202" y="704" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a" text-anchor="start">架构</text>
+<rect x="42" y="760" width="194" height="82" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="58" y="784" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" fill="#64748b" text-anchor="start">06</text>
+<rect x="94" y="776" width="96" height="54" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="142" y="808" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#64748b" text-anchor="middle">16:9</text>
+<text x="202" y="802" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a" text-anchor="start">流程</text>
+<rect x="42" y="858" width="194" height="82" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="58" y="882" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" fill="#64748b" text-anchor="start">07</text>
+<rect x="94" y="874" width="96" height="54" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="142" y="906" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#64748b" text-anchor="middle">16:9</text>
+<text x="202" y="900" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#0f172a" text-anchor="start">成效</text>
+<rect x="292" y="158" width="264" height="110" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="310" y="186" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#1e40af" text-anchor="start">当前参考页：01 封面页</text>
+<text x="310" y="212" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="#334155" fill="#334155" text-anchor="start">布局：左标题右视觉，底部信息条</text>
+<text x="310" y="234" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="#334155" fill="#334155" text-anchor="start">配色：#1e40af / #60a5fa / #f8fafc</text>
+<text x="310" y="256" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="#334155" fill="#334155" text-anchor="start">字体：标题 44pt 加粗，正文 16pt</text>
+<rect x="292" y="288" width="264" height="302" rx="14" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1" />
+<text x="310" y="318" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#1e40af" text-anchor="start">slideVisualPrompt</text>
+<text x="310" y="346" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">生成一页蓝白科技治理风中文路演</text>
+<text x="310" y="368" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start"> PPT 封面，浅蓝白渐变背景，左</text>
+<text x="310" y="390" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">侧放置大标题、副标题与团队信息</text>
+<text x="310" y="412" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">，右侧放置半透明数据看板或社区</text>
+<text x="310" y="434" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">治理插图，底部保留蓝色流线，整</text>
+<text x="310" y="456" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">体专业、克制、可信，不要霓虹和</text>
+<text x="310" y="478" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">赛博朋克。</text>
+<rect x="292" y="612" width="264" height="220" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="310" y="642" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="start">elementRebuildPrompt</text>
+<text x="310" y="670" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">逐元素重建：标题区 x=8 y=18 w=</text>
+<text x="310" y="692" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">52 h=12；副标题置于标题下；右侧</text>
+<text x="310" y="714" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">主视觉 x=58 y=18 w=34 h=46；底</text>
+<text x="310" y="736" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">部信息条高度 8%。</text>
+<rect x="292" y="854" width="264" height="44" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="324" y="882" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#1e40af" text-anchor="start">复制 Prompt</text>
+<text x="439" y="882" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="600" fill="#1e40af" text-anchor="start">重新反推</text>
+<rect x="612" y="158" width="424" height="74" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="630" y="188" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#0f172a" text-anchor="start">AI PPT 助手</text>
+<text x="630" y="214" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">结合左侧参考风格，为你规划每一页内容和生成 Prompt。</text>
+<rect x="618" y="256" width="380" height="68" rx="16" fill="#eff6ff" stroke="none" stroke-width="1" />
+<text x="636" y="284" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">我已读取参考 PPT：蓝白科技治理风，适合项目路演</text>
+<text x="636" y="304" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">/政务汇报。</text>
+<rect x="650" y="340" width="380" height="68" rx="16" fill="#1e40af" stroke="none" stroke-width="1" />
+<text x="668" y="368" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">我要做一份社区治理 AI 平台路演 PPT，12 页，面</text>
+<text x="668" y="388" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">向街道领导。</text>
+<rect x="618" y="424" width="380" height="68" rx="16" fill="#eff6ff" stroke="none" stroke-width="1" />
+<text x="636" y="452" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">建议结构：封面→背景→痛点→方案→架构→功能→</text>
+<text x="636" y="472" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">流程→场景→成效→落地→团队→结束。</text>
+<rect x="612" y="842" width="424" height="106" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="630" y="872" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="start">当前生成计划摘要</text>
+<text x="630" y="898" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">12 页 · 正式可信 · 蓝白科技风</text>
+<text x="630" y="920" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">已映射参考页：封面/目录/流程/数据</text>
+<rect x="612" y="964" width="424" height="48" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="630" y="994" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="start">输入需求，例如：第 6 页改成流程图…</text>
+<rect x="962" y="974" width="58" height="28" rx="9" fill="#1e40af" stroke="none" stroke-width="1" />
+<text x="991" y="993" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">发送</text>
+<rect x="1092" y="158" width="304" height="82" rx="14" fill="#eff6ff" stroke="#1e40af" stroke-width="2" />
+<text x="1110" y="188" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#1e40af" text-anchor="start">01｜封面页</text>
+<text x="1110" y="214" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">参考：原 PPT 第 1 页 · 状态：已生成</text>
+<rect x="1092" y="260" width="304" height="72" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="1108" y="288" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="start">02｜目录页</text>
+<text x="1108" y="312" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">待生成 · 可编辑 Prompt</text>
+<rect x="1092" y="350" width="304" height="72" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="1108" y="378" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="start">03｜问题背景</text>
+<text x="1108" y="402" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">待生成 · 可编辑 Prompt</text>
+<rect x="1092" y="440" width="304" height="72" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="1108" y="468" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="start">04｜解决方案</text>
+<text x="1108" y="492" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">待生成 · 可编辑 Prompt</text>
+<rect x="1092" y="530" width="304" height="72" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="1108" y="558" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="start">05｜平台架构</text>
+<text x="1108" y="582" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">待生成 · 可编辑 Prompt</text>
+<rect x="1092" y="620" width="304" height="72" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="1108" y="648" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="start">06｜服务流程</text>
+<text x="1108" y="672" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">待生成 · 可编辑 Prompt</text>
+<rect x="1092" y="710" width="304" height="72" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="1108" y="738" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="start">07｜成效数据</text>
+<text x="1108" y="762" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="start">待生成 · 可编辑 Prompt</text>
+<rect x="1092" y="970" width="142" height="36" rx="10" fill="#1e40af" stroke="none" stroke-width="1" />
+<text x="1163" y="993" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">批量生成</text>
+<rect x="1250" y="970" width="130" height="36" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="1315" y="993" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#334155" text-anchor="middle">导出 Prompt</text>
+<rect x="1462" y="158" width="406" height="236" rx="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" />
+<rect x="1484" y="184" width="362" height="192" rx="12" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="1665.0" y="268" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="600" fill="#64748b" text-anchor="middle">16:9 可编辑 PPT 预览</text>
+<text x="1462" y="430" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700" fill="#0f172a" text-anchor="start">当前页：01 封面页</text>
+<text x="1462" y="458" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">状态：已生成 · 可微调 · 引用 ref-001</text>
+<rect x="1462" y="484" width="406" height="42" rx="12" fill="#1e40af" stroke="none" stroke-width="1" />
+<text x="1665.0" y="511" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">重新生成此页</text>
+<rect x="1462" y="542" width="406" height="42" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="1665.0" y="569" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#334155" text-anchor="middle">微调内容</text>
+<rect x="1462" y="600" width="406" height="42" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+<text x="1665.0" y="627" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#334155" text-anchor="middle">套用参考页风格</text>
+<rect x="1462" y="658" width="406" height="42" rx="12" fill="#dcfce7" stroke="none" stroke-width="1" />
+<text x="1665.0" y="685" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#16a34a" text-anchor="middle">标记为已确认</text>
+<rect x="1462" y="742" width="406" height="180" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="1482" y="772" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="start">微调面板</text>
+<text x="1482" y="800" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">标题 / 正文 / 图片 / 色彩 / 布局</text>
+<text x="1482" y="824" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">修改后更新 RenderSpec 与 PPTJson</text>
+<text x="1482" y="848" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#64748b" text-anchor="start">PPTX 导出保持文本与形状可编辑</text>
+<rect x="24" y="1044" width="1872" height="24" rx="0" fill="#f8fafc" stroke="none" stroke-width="1" />
+<text x="960" y="1062" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#475569" text-anchor="middle">默认进入五栏 Workbench；旧五步向导仅作为 Legacy/Fallback。核心链路：参考页 → 反推 Prompt → AI 对话 → 新页 Prompt → 生成结果。</text>
+</svg>
