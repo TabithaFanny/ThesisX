@@ -1,0 +1,307 @@
+[
+  {
+    "file": "svg/component_navigation_index.svg",
+    "name": "component_navigation_index",
+    "title": "组件：编号导航目录",
+    "size": {
+      "width": 240,
+      "height": 520
+    },
+    "description": "左侧页面总览导航组件。用于展示系统核心页面清单，每行包含圆形编号、页面名称和短说明。整体为浅色卡片、细边框、蓝色强调。",
+    "usage": "适合放在总览页或首页左侧，用于快速说明产品页面结构。",
+    "elements": [
+      "工作台 / 首页",
+      "编辑器（主要交互页）",
+      "AI 对话 / 助手",
+      "文献管理",
+      "数据与图表",
+      "写作技能库",
+      "版本历史",
+      "协作空间",
+      "投稿与回复",
+      "设置中心"
+    ]
+  },
+  {
+    "file": "svg/component_editor_toolbar.svg",
+    "name": "component_editor_toolbar",
+    "title": "组件：编辑器顶部工具栏",
+    "size": {
+      "width": 720,
+      "height": 56
+    },
+    "description": "论文编辑器顶部工具栏。左侧为产品标识与当前文档下拉，中间可放保存/撤销等状态，右侧提供导出、AI、设置等快捷入口。",
+    "usage": "适用于主编辑页和 WYSIWYG 工作区。",
+    "elements": [
+      "Logo",
+      "文档下拉",
+      "快捷按钮"
+    ]
+  },
+  {
+    "file": "svg/component_wysiwyg_editor_canvas.svg",
+    "name": "component_wysiwyg_editor_canvas",
+    "title": "组件：WYSIWYG 正文编辑画布",
+    "size": {
+      "width": 660,
+      "height": 420
+    },
+    "description": "中央正文编辑区，呈现论文标题、段落、AI 内联提示、图片占位。用于模拟 ThesisX 的核心 WYSIWYG 写作区域。",
+    "usage": "适用于编辑器页、双栏审稿页、生成结果导入页。",
+    "elements": [
+      "标题",
+      "正文占位",
+      "AI 内联提示",
+      "图表占位"
+    ]
+  },
+  {
+    "file": "svg/component_outline_tree.svg",
+    "name": "component_outline_tree",
+    "title": "组件：论文大纲树",
+    "size": {
+      "width": 300,
+      "height": 420
+    },
+    "description": "论文大纲树组件。以章节层级展示论文结构，当前章节用浅色高亮，适合与正文编辑器联动定位。",
+    "usage": "用于编辑器左栏、章节规划页。",
+    "elements": [
+      "一、绪论",
+      "1.1 研究背景",
+      "1.2 研究意义",
+      "二、文献综述",
+      "三、理论框架",
+      "四、机制分析",
+      "五、结论"
+    ]
+  },
+  {
+    "file": "svg/component_agent_chat_panel.svg",
+    "name": "component_agent_chat_panel",
+    "title": "组件：Agent 对话面板",
+    "size": {
+      "width": 360,
+      "height": 420
+    },
+    "description": "Agent 对话面板。包含用户消息、AI 回复、底部输入框，支持 @引用、#章节、skill 调用等交互。",
+    "usage": "用于 AI Workspace、右侧助手栏、分轮改稿页。",
+    "elements": [
+      "对话气泡",
+      "输入框",
+      "上下文引用提示"
+    ]
+  },
+  {
+    "file": "svg/component_version_diff_card.svg",
+    "name": "component_version_diff_card",
+    "title": "组件：版本差异卡片",
+    "size": {
+      "width": 420,
+      "height": 260
+    },
+    "description": "版本差异卡片。上方显示删除内容，下方显示新增内容，并提供修改原因。用于 Git/快照版本对比。",
+    "usage": "用于版本历史页、审稿修改记录。",
+    "elements": [
+      "删除块",
+      "新增块",
+      "修改原因"
+    ]
+  },
+  {
+    "file": "svg/component_skill_cards.svg",
+    "name": "component_skill_cards",
+    "title": "组件：写作技能卡片组",
+    "size": {
+      "width": 420,
+      "height": 280
+    },
+    "description": "写作技能库卡片组件。每张卡展示技能名称、用途、使用次数和评分，用于选择调用不同 writing/review skill。",
+    "usage": "用于写作技能库、Agent 设置、AI Workspace 右侧面板。",
+    "elements": [
+      "技能名称",
+      "说明",
+      "使用数据",
+      "评分"
+    ]
+  },
+  {
+    "file": "svg/page_01_workspace_home.svg",
+    "name": "page_01_workspace_home",
+    "title": "页面 01：工作台 / 首页",
+    "size": {
+      "width": 520,
+      "height": 360
+    },
+    "description": "首页工作台缩略图。展示问候语、项目搜索、新建论文按钮、项目进度卡、最近编辑和待办事项。",
+    "usage": "用于进入系统后的总览页。",
+    "elements": [
+      "问候区",
+      "项目进度卡",
+      "最近编辑",
+      "待办事项"
+    ]
+  },
+  {
+    "file": "svg/page_02_main_editor.svg",
+    "name": "page_02_main_editor",
+    "title": "页面 02：编辑器主交互页",
+    "size": {
+      "width": 720,
+      "height": 360
+    },
+    "description": "主编辑器页面。包含顶部工具栏、左侧文档大纲、中央正文编辑区、右侧预览区，适合展示 ThesisX 的核心写作体验。",
+    "usage": "作为 WYSIWYG 论文写作主页面。",
+    "elements": [
+      "顶部工具栏",
+      "文档大纲",
+      "正文编辑区",
+      "预览区"
+    ]
+  },
+  {
+    "file": "svg/page_03_ai_chat.svg",
+    "name": "page_03_ai_chat",
+    "title": "页面 03：AI 对话 / 助手",
+    "size": {
+      "width": 360,
+      "height": 360
+    },
+    "description": "AI 助手页面。左侧为对话历史，中间为对话流和输入框，适合承载 Agent 命令、上下文引用、生成请求。",
+    "usage": "用于 Agent 主交互页。",
+    "elements": [
+      "对话历史",
+      "聊天气泡",
+      "输入框"
+    ]
+  },
+  {
+    "file": "svg/page_04_literature_management.svg",
+    "name": "page_04_literature_management",
+    "title": "页面 04：文献管理",
+    "size": {
+      "width": 520,
+      "height": 280
+    },
+    "description": "文献管理页面。包含文献库分类、搜索、导入按钮、文献表格和标签字段。",
+    "usage": "用于论文库、RAG 文献管理入口。",
+    "elements": [
+      "文献库侧栏",
+      "搜索框",
+      "导入按钮",
+      "文献表格"
+    ]
+  },
+  {
+    "file": "svg/page_05_data_charts.svg",
+    "name": "page_05_data_charts",
+    "title": "页面 05：数据与图表",
+    "size": {
+      "width": 520,
+      "height": 280
+    },
+    "description": "数据与图表页面。展示数据集分类、文件列表和四种图表缩略图，用于论文图表管理和分析结果生成。",
+    "usage": "用于数据分析与图表自动嵌入。",
+    "elements": [
+      "数据集侧栏",
+      "数据表",
+      "柱状图",
+      "折线图",
+      "饼图",
+      "热力图"
+    ]
+  },
+  {
+    "file": "svg/page_06_skill_library.svg",
+    "name": "page_06_skill_library",
+    "title": "页面 06：写作技能库",
+    "size": {
+      "width": 520,
+      "height": 280
+    },
+    "description": "写作技能库页面。左侧为技能分类，右侧为技能卡片矩阵，展示技能名称、用途和调用入口。",
+    "usage": "用于 Agent Skill 管理和调用。",
+    "elements": [
+      "技能分类",
+      "技能卡片"
+    ]
+  },
+  {
+    "file": "svg/page_07_version_history.svg",
+    "name": "page_07_version_history",
+    "title": "页面 07：版本历史",
+    "size": {
+      "width": 520,
+      "height": 260
+    },
+    "description": "版本历史页面。左侧为版本列表，右侧展示两个版本的差异块和操作按钮。",
+    "usage": "用于论文版本追踪、差异对比和回滚。",
+    "elements": [
+      "版本列表",
+      "差异块",
+      "比较按钮"
+    ]
+  },
+  {
+    "file": "svg/page_08_collaboration.svg",
+    "name": "page_08_collaboration",
+    "title": "页面 08：协作空间",
+    "size": {
+      "width": 520,
+      "height": 260
+    },
+    "description": "协作空间页面。左侧为项目讨论流，右侧为任务看板，支持导师、合作者、AI 共同协作。",
+    "usage": "用于团队协作、任务分配和讨论。",
+    "elements": [
+      "讨论流",
+      "头像",
+      "任务看板"
+    ]
+  },
+  {
+    "file": "svg/page_09_submission_rebuttal.svg",
+    "name": "page_09_submission_rebuttal",
+    "title": "页面 09：投稿与回复",
+    "size": {
+      "width": 520,
+      "height": 260
+    },
+    "description": "投稿与回复页面。表格展示会议/期刊、审稿状态、投稿时间与操作入口，适合后续 rebuttal 和投稿管理。",
+    "usage": "用于投稿状态管理、审稿意见回复。",
+    "elements": [
+      "投稿表格",
+      "状态标签",
+      "操作按钮"
+    ]
+  },
+  {
+    "file": "svg/page_10_settings.svg",
+    "name": "page_10_settings",
+    "title": "页面 10：设置中心",
+    "size": {
+      "width": 520,
+      "height": 300
+    },
+    "description": "设置中心页面。左侧个人信息，右侧模型设置表单，包括默认模型、备用模型、温度和语言选项。",
+    "usage": "用于配置模型、界面、账号与偏好。",
+    "elements": [
+      "个人信息卡",
+      "模型设置表单"
+    ]
+  },
+  {
+    "file": "svg/00_overview_infographic.svg",
+    "name": "00_overview_infographic",
+    "title": "总览页：ThesisX 主要交互页面总览",
+    "size": {
+      "width": 1536,
+      "height": 1024
+    },
+    "description": "整张页面总览信息图的 SVG 复刻版。顶部为标题与说明，左侧为页面目录，右侧以卡片形式展示 10 个核心交互页面。",
+    "usage": "用于整体说明产品页面结构，也可作为风格与布局参考母版。",
+    "elements": [
+      "标题区",
+      "左侧目录",
+      "10 个页面卡片"
+    ]
+  }
+]
