@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1000" viewBox="0 0 1700 1000">
+<rect x="0" y="0" width="1700" height="1000" rx="0" fill="#f8fafc" stroke="none" stroke-width="1" />
+<text x="40" y="54" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800" fill="#0f172a" text-anchor="start">Workbench 组件树 / 工程拆分图</text>
+<rect x="50" y="110" width="300" height="250" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="70" y="146" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" fill="#1e40af" text-anchor="start">WorkbenchTopBar</text>
+<rect x="70" y="180" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="84" y="199" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">ProjectTitle</text>
+<rect x="70" y="216" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="84" y="235" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">ModeBadge</text>
+<rect x="70" y="252" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="84" y="271" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">SaveStatusIndicator</text>
+<rect x="70" y="288" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="84" y="307" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">ExportButton</text>
+<rect x="70" y="324" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="84" y="343" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">SettingsButton</text>
+<rect x="390" y="110" width="300" height="250" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="410" y="146" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" fill="#1e40af" text-anchor="start">ReferenceSlideRail</text>
+<rect x="410" y="180" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="424" y="199" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">ReferenceUploadZone</text>
+<rect x="410" y="216" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="424" y="235" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">ReferenceSlideThumbnailList</text>
+<rect x="410" y="252" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="424" y="271" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">ReferenceSlideCard</text>
+<rect x="410" y="288" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="424" y="307" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">AnalysisStatusBadge</text>
+<rect x="730" y="110" width="300" height="250" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="750" y="146" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" fill="#1e40af" text-anchor="start">ReferencePromptPanel</text>
+<rect x="750" y="180" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="764" y="199" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">ReferencePromptSummary</text>
+<rect x="750" y="216" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="764" y="235" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">SlideVisualPromptCard</text>
+<rect x="750" y="252" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="764" y="271" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">ElementRebuildPromptCard</text>
+<rect x="750" y="288" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="764" y="307" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">PromptActionBar</text>
+<rect x="1070" y="110" width="300" height="250" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="1090" y="146" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" fill="#1e40af" text-anchor="start">AssistantChatPanel</text>
+<rect x="1090" y="180" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="1104" y="199" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">ConversationList</text>
+<rect x="1090" y="216" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="1104" y="235" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">AssistantMessage</text>
+<rect x="1090" y="252" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="1104" y="271" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">UserMessage</text>
+<rect x="1090" y="288" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="1104" y="307" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">PromptComposer</text>
+<rect x="1090" y="324" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="1104" y="343" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">PlanSummaryCard</text>
+<rect x="50" y="430" width="300" height="250" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="70" y="466" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" fill="#1e40af" text-anchor="start">GeneratedPromptPanel</text>
+<rect x="70" y="500" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="84" y="519" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">GeneratedPromptList</text>
+<rect x="70" y="536" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="84" y="555" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">GeneratedPromptCard</text>
+<rect x="70" y="572" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="84" y="591" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">PromptEditor</text>
+<rect x="70" y="608" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="84" y="627" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">BatchGenerateButton</text>
+<rect x="390" y="430" width="300" height="250" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="410" y="466" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" fill="#1e40af" text-anchor="start">ResultPreviewPanel</text>
+<rect x="410" y="500" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="424" y="519" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">SlidePreviewCanvas</text>
+<rect x="410" y="536" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="424" y="555" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">ResultToolbar</text>
+<rect x="410" y="572" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="424" y="591" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">MicroAdjustPanel</text>
+<rect x="410" y="608" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="424" y="627" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">ConfirmSlideButton</text>
+<rect x="730" y="430" width="300" height="250" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="750" y="466" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" fill="#1e40af" text-anchor="start">ProjectPersistence</text>
+<rect x="750" y="500" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="764" y="519" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">workbenchStore</text>
+<rect x="750" y="536" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="764" y="555" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">projectService</text>
+<rect x="750" y="572" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="764" y="591" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">imageService</text>
+<rect x="750" y="608" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="764" y="627" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">versionService</text>
+<rect x="1070" y="430" width="300" height="250" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+<text x="1090" y="466" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" fill="#1e40af" text-anchor="start">API Routes</text>
+<rect x="1090" y="500" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="1104" y="519" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">reverse-visual-prompt</text>
+<rect x="1090" y="536" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="1104" y="555" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">workbench-chat</text>
+<rect x="1090" y="572" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="1104" y="591" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">generate-page-prompts</text>
+<rect x="1090" y="608" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="1104" y="627" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">generate-slide-from-prompt</text>
+<rect x="1090" y="644" width="260" height="28" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" />
+<text x="1104" y="663" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#334155" text-anchor="start">export-pptx</text>
+<line x1="350" y1="235" x2="390" y2="235" stroke="#1e40af" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="690" y1="235" x2="730" y2="235" stroke="#1e40af" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="1030" y1="235" x2="1070" y2="235" stroke="#1e40af" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="1220" y1="360" x2="1220" y2="430" stroke="#1e40af" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="350" y1="555" x2="390" y2="555" stroke="#1e40af" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="690" y1="555" x2="730" y2="555" stroke="#1e40af" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="1030" y1="555" x2="1070" y2="555" stroke="#1e40af" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="50" y="760" width="1320" height="160" rx="16" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1" />
+<text x="80" y="800" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800" fill="#1e40af" text-anchor="start">实现原则</text>
+<text x="80" y="835" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="500" fill="#334155" text-anchor="start">1. 默认主页面是 Workbench，不是五步向导；旧 Step Wizard 仅保留为 Legacy/Fallback。</text>
+<text x="80" y="861" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="500" fill="#334155" text-anchor="start">2. 所有 AI 输出必须落入结构化对象：ReferenceSlidePrompt / WorkbenchDeckBrief / GeneratedSlidePrompt / RenderableSlide。</text>
+<text x="80" y="887" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="500" fill="#334155" text-anchor="start">3. 生成结果必须继续进入 PPTJson / RenderSpec / export-pptx，不能用整页图片替代可编辑 PPTX。</text>
+<text x="80" y="913" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="500" fill="#334155" text-anchor="start">4. API Key 由后端环境变量优先提供；前端设置页只是高级覆盖，不是主路径。</text>
+</svg>
